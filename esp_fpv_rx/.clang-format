@@ -1,0 +1,49 @@
+Language:        Cpp
+BasedOnStyle:  LLVM
+AllowShortFunctionsOnASingleLine: None
+AlwaysBreakAfterDefinitionReturnType: All
+AlwaysBreakAfterReturnType: TopLevelDefinitions
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterControlStatement: true
+  AfterFunction:   true
+  AfterEnum:       true
+  AfterStruct:     true
+  AfterUnion:      true
+  BeforeElse:      true
+  AfterNamespace:  true
+  AfterClass:      true
+IndentWidth:    2
+TabWidth: 2
+MaxEmptyLinesToKeep: 2
+PointerAlignment: Left
+UseTab:          ForIndentation
+
+# Maximum line length ruler
+ColumnLimit: 120
+
+# Splits "" and <> includes
+IncludeBlocks: Regroup
+
+# Enables aligning for consecutive macro definitions
+AlignConsecutiveMacros: true
+
+# This is According to LLVM Coding Standard must be set to true
+SpaceBeforeParens: Never
+
+# Disables any reformats of comments (can fix problems with Doxygen docs)
+ReflowComments: false
+
+# Conserve original author functions declarations
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackArguments: false
+BinPackParameters: false
+
+AlwaysBreakTemplateDeclarations: Yes
+IndentCaseLabels: false
+
+NamespaceIndentation: All
+AccessModifierOffset: -4
+
+SpaceBeforeCpp11BracedList: true
+BreakConstructorInitializers: BeforeComma

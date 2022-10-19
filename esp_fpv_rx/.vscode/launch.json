@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "cppdbg",
+      "name": "ESP32s3 OpenOCD",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/build",
+			"environment": [{ "name": "PATH", "value": "${config:idf.customExtraPaths}" }],
+      "program": "${workspaceFolder}/build/${command:espIdf.getProjectName}.elf",
+			"MIMode": "gdb",
+			"miDebuggerPath": "${command:espIdf.getXtensaGdb}",
+      // "miDebuggerPath": "/Users/bismuth/.espressif/tools/xtensa-esp-elf-gdb/11.2_20220823/xtensa-esp-elf-gdb/bin/xtensa-esp32s3-elf-gdb",
+      //"preLaunchTask": "OpenOCD: Start openOCD",
+			// "debugServerArgs": "-f board/esp32s3-builtin.cfg -c \"set ESP_RTOS none\"",
+			// "debugServerArgs": "-f interface/ftdi/esp32_devkitj_v1.cfg -f target/esp32.cfg -c \"esp32.cpu1 configure -rtos FreeRTOS\"",
+			// openocd -f board/esp32s3-builtin.cfg -c "esp32s3.cpu1 configure -rtos FreeRTOS"
+      "setupCommands": [
+				{ "text": "target remote 127.0.0.1:3333" },
+				{ "text": "mon reset halt" },
+				{ "text": "flushregs" },
+				{ "text": "mon program_esp ${workspaceFolder}/build/bootloader/bootloader.bin 0x0 verify"},
+				{ "text": "mon program_esp ${workspaceFolder}/build/partition_table/partition-table.bin 0x8000 verify"},
+				{ "text": "mon program_esp ${workspaceFolder}/build/esp_fpv_rx.bin 0x10000 verify"},
+				{ "text": "mon reset halt" },
+				{ "text": "set remote hardware-watchpoint-limit 2" },
+				{ "text": "mon reset halt" },
+				{ "text": "thb app_main" },
+				{ "text": "flushregs" },
+				{ "text": "c" }
+			]
+    }
+  ]
+}
