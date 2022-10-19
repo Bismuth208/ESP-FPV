@@ -1,0 +1,40 @@
+# In progress:
+
+
+# TODO:
+BD-0033 Add binaries for every Country
+BD-0032 Add flow charts: Initialization, Data transmission, Per-module flow
+BD-0031 Make FrameLimiter adjustable on ESP-CAM
+BD-0030 Add current resolution status in OSD
+BD-0029 Add "Wrong power-on seq." msg if out of sync detected (Send reset to Transmitter)
+BD-0028 Add OLED screen detection (If it's not presented draw "OSD not Available" msg on the main screen)
+BD-0027 Add 'Initial Setup' screen with region selection, channel, e.t.c
+BD-0026 Add Remote GPIO setup/control on ESP-CAM
+BD-0024 Fix Camera LED (unavailable to take image when PWM is enabled on IO4)
+BD-0022 Remove ANY global variable outside of module!
+BD-0021 Write a handsome readme
+BD-0019 Buttons control (Next Select Done)
+BD-0018 Power level selection with Buttons
+BD-0017 Camera SD card support
+BD-0016 Camera recording and Start/stop/photo controls
+BD-0015 Settings save/load
+BD-0014 Resolution switch
+BD-0013 Frame limiter switch like on/off
+BD-0011 Image scaling when draw on TFT screen
+BD-0010 Improve stability of esp_wifi_80211_tx
+BD-0009 More lightweight way to draw on TFT (C version with minimal stuff)
+BD-0008 BLE remote controls
+BD-0006 Cover not supported packet type.
+BD-0005 add random stuff for magic_packet.random
+BD-0004 add whole pucDataIn encryption for wifi_crypt_packet
+BD-0003 add lock for multithread access for wifi_crypt_packet
+BD-0002 replace magic number for IMG chunk size.
+
+
+# DONE:
+BD-0025 Add "pairing" of receiver and transmitter via Holding "some button" or "pairing cable"
+BD-0012 Rewrite Memory model with better architecture and performance
+BD-0023 Rewrite debug_tools
+BD-0020 Initial Jpg header send
+BD-0007 AirScanner start with GPIO set to low	
+BD-0001 fix for limited range due to North America.

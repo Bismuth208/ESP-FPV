@@ -1,0 +1,30 @@
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Compilation stuff
+*.d
+*.o
+*.mk
+*.map
+*.list
+*.elf
+Debug/
+Release/
+build
+
+# python
+*.pyc
+__pycache__/
+
+# IDE stuff
+.pio
+sdkconfig*
+!sdkconfig.defaults
+.vs
+.vscode
