@@ -4,6 +4,7 @@ set(fpv_srcs
     "image_decoder.c"    
     "memory_model/memory_model.c"
     "tjpg_decoder/tjpgd.c"
+    "debug_assist.c"
     )
     
 set(wireless_srcs

@@ -6,13 +6,15 @@
 #include "wireless/wireless_main.h"
 
 //
-#include "freertos/FreeRTOS.h"
-#include "freertos/FreeRTOSConfig.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "freertos/timers.h"
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+#include <freertos/FreeRTOSConfig.h>
+#include <freertos/event_groups.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
 //
 #include <driver/gpio.h>
 #include <driver/ledc.h>
@@ -45,7 +47,7 @@
 #define STACK_WORDS_SIZE_FOR_TASK_CAMERA (2048)
 #define PRIORITY_LEVEL_FOR_TASK_CAMERA   (1)
 #define PINNED_CORE_FOR_TASK_CAMERA      (1)
-const char* assigned_name_for_task_camera = "\0";
+const char* assigned_name_for_task_camera = "CameraTask";
 TaskHandle_t xCameraTaskHandler = NULL;
 StaticTask_t xCameraTaskControlBlock;
 StackType_t xCameraStack[STACK_WORDS_SIZE_FOR_TASK_CAMERA];
@@ -304,16 +306,6 @@ take_new_image_frame(void)
 #endif
 }
 
-static void
-vForceFrameUpdateTimer(TimerHandle_t xTimer)
-{
-	(void)xTimer;
-	vStartNewFrame();
-
-#ifdef TIMER_FRAME_UPDATE_DBG_PRINTOUT
-	async_printf(async_print_type_str, "vForceFrameUpdateTimer\n", 0);
-#endif
-}
 
 static uint32_t
 ulWaitNewFrameAck(TickType_t xTicksToSync)
@@ -397,14 +389,26 @@ vStartNewFrame(void)
 // FreeRTOS functions
 
 static void
+vForceFrameUpdateTimer(TimerHandle_t xTimer)
+{
+	(void)xTimer;
+	vStartNewFrame();
+
+#ifdef TIMER_FRAME_UPDATE_DBG_PRINTOUT
+	async_printf(async_print_type_str, "vForceFrameUpdateTimer\n", 0);
+#endif
+}
+
+
+static void
 vCameraTask(void* pvArg)
 {
 	(void)pvArg;
 	// No further execution until full initialization
 	task_sync_get_bits(TASK_SYNC_EVENT_BIT_CAMERA);
 
-#ifdef TASK_START_EVENT_DBG_PRINTOUT
-	async_printf(async_print_type_str, "vCameraTask Start\n", 0);
+#ifdef ENABLE_TASK_START_EVENT_DBG_PRINTOUT
+	async_printf(async_print_type_str, assigned_name_for_task_camera, 0);
 #endif
 
 	if(ulWaitNewFrameAck(portMAX_DELAY))

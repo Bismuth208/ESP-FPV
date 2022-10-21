@@ -1,11 +1,12 @@
 #include "data_common.h"
 #include "debug_tools_conf.h"
 #include "memory_model/memory_model.h"
+#include "pins_definitions.h"
 #include "wireless_conf.h"
 #include "wireless_main.h"
 
 //
-#include "sdkconfig.h"
+#include <sdkconfig.h>
 //
 #include <driver/gpio.h>
 #include <driver/uart.h>
@@ -15,13 +16,14 @@
 #include <nvs.h>
 #include <nvs_flash.h>
 //
-#include "aes/esp_aes.h"
-#include "esp_private/periph_ctrl.h"
-#include "hal/aes_hal.h"
-#include "hal/aes_ll.h"
-#include "soc/dport_access.h"
-#include "soc/hwcrypto_periph.h"
-#include "soc/periph_defs.h"
+#include <aes/esp_aes.h>
+#include <esp_private/periph_ctrl.h>
+#include <hal/aes_hal.h>
+#include <hal/aes_ll.h>
+#include <soc/dport_access.h>
+#include <soc/hwcrypto_periph.h>
+#include <soc/hwcrypto_reg.h>
+#include <soc/periph_defs.h>
 //
 #include <assert.h>
 #include <stdint.h>
@@ -29,10 +31,6 @@
 
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
-
-/// Single Pin is used for the communication
-/// @attention In normal operation mode this pin MUST be connected to the GND
-#define UART_SYNC_RX_TX_PIN (GPIO_NUM_19)
 
 /// Used UART for the communication
 #define UART_SYNC_NUM (UART_NUM_2)
@@ -70,7 +68,6 @@ const uart_config_t uart_config = {.baud_rate = UART_SYNC_BAUD_SPEED,
                                    .source_clk = UART_SCLK_DEFAULT};
 
 
-
 static uint8_t ucCryptLastMode = 0xFF;
 
 esp_aes_context magic_key_storage = {0};
@@ -93,7 +90,7 @@ static inline void wifi_aes_crypt_ll(uint32_t* pulDataIn, uint32_t* pulDataOut);
  * @brief Sync Transmitter & Receiver with a bunch of Keys and exchange MAC addresses.
  * 
  * @note Everything is done over UART and single pin.
- */ 
+ */
 void wifi_enryption_pair_keys(void);
 
 // ----------------------------------------------------------------------
@@ -144,19 +141,19 @@ wifi_enryption_pair_keys(void)
 	ESP_ERROR_CHECK(uart_driver_install(UART_SYNC_NUM, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
 	ESP_ERROR_CHECK(uart_set_mode(UART_SYNC_NUM, UART_MODE_UART));
 
-  // Generate random numbers for at least 100 times
-  uint32_t ulEntropyEnrols = 100 + (esp_random() & 0xff);
+	// Generate random numbers for at least 100 times
+	uint32_t ulEntropyEnrols = 100 + (esp_random() & 0xff);
 
 	for(size_t i = 0; i < ulEntropyEnrols; i++)
 	{
 		esp_fill_random((void*)&xSync, sizeof(pairing_data_t));
-    vTaskDelay(pdMS_TO_TICKS(1));
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 
 	// Fill self MAC. It will be used by the Transmitter
 	vWirelessGetOwnMAC(&xSync.ucOtherNodeMac[0]);
 
-  // Send data to the Transmitter
+	// Send data to the Transmitter
 	uart_write_bytes(UART_SYNC_NUM, (const char*)&xSync, sizeof(pairing_data_t));
 	ESP_ERROR_CHECK(uart_wait_tx_done(UART_SYNC_NUM, pdMS_TO_TICKS(200)));
 
@@ -290,10 +287,10 @@ init_encryption(void)
 		vWirelessUpdateNvsSecretKeys(pdFALSE);
 	}
 
-  vWirelessSetNodeKeys(&xSecretSync);
+	vWirelessSetNodeKeys(&xSecretSync);
 
-  // It will be not used anymore
-  ESP_ERROR_CHECK(gpio_reset_pin(UART_SYNC_RX_TX_PIN));
+	// It will be not used anymore
+	ESP_ERROR_CHECK(gpio_reset_pin(UART_SYNC_RX_TX_PIN));
 
 	// Enable AES hardware encryption
 	esp_aes_init(&magic_key_storage);

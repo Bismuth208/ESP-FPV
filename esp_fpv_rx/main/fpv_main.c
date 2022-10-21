@@ -3,10 +3,19 @@
 #include "display_osd.h"
 #include "image_decoder.h"
 #include "memory_model/memory_model.h"
+#include "pins_definitions.h"
 #include "wireless/wireless_main.h"
 
 //
-#include "sdkconfig.h"
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+#include <freertos/FreeRTOSConfig.h>
+#include <freertos/event_groups.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
 //
 #include <esp_attr.h>
 #include <esp_timer.h>
@@ -19,26 +28,18 @@
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
 
+
 // ----------------------------------------------------------------------
 // FreeRTOS Variables
-
-#ifdef ENABLE_DEBUG_TOOLS
-// Print all stuff to console
-#define STACK_WORDS_SIZE_FOR_TASK_PRINTF (2048)
-#define PRIORITY_LEVEL_FOR_TASK_PRINTF   (1)
-#define PINNED_CORE_FOR_TASK_PRINTF      (0)
-const char* assigned_name_for_task_printf = "task_printf\n\0";
-TaskHandle_t xPrintfTaskHandler = NULL;
-StaticTask_t xPrintfTaskControlBlock;
-StackType_t xPrintfStack[STACK_WORDS_SIZE_FOR_TASK_PRINTF];
-#endif
 
 // For Task syncronization
 EventGroupHandle_t xTaskSyncEventGroupHandler;
 StaticEventGroup_t xTaskSyncBlockEventGroup;
 
+
 // ----------------------------------------------------------------------
 // Variables
+
 
 // ----------------------------------------------------------------------
 // Static functions declaration
@@ -47,14 +48,10 @@ static void init_gpio(void);
 
 static void init_main_rtos(void);
 
-#ifdef ENABLE_DEBUG_TOOLS
-static void init_async_printf(void);
-
-static void vPrintfTask(void* pvArg);
-#endif
 
 // ----------------------------------------------------------------------
 // Static functions
+
 
 static void
 init_gpio(void)
@@ -63,21 +60,6 @@ init_gpio(void)
 	gpio_set_pull_mode(BUTTON_1, GPIO_PULLUP_ONLY);
 }
 
-#ifdef ENABLE_DEBUG_TOOLS
-static void
-init_async_printf(void)
-{
-	xPrintfTaskHandler = xTaskCreateStaticPinnedToCore((TaskFunction_t)(vPrintfTask),
-	                                                   assigned_name_for_task_printf,
-	                                                   STACK_WORDS_SIZE_FOR_TASK_PRINTF,
-	                                                   NULL,
-	                                                   PRIORITY_LEVEL_FOR_TASK_PRINTF,
-	                                                   xPrintfStack,
-	                                                   &xPrintfTaskControlBlock,
-	                                                   (BaseType_t)PINNED_CORE_FOR_TASK_PRINTF);
-	assert(xPrintfTaskHandler);
-}
-#endif
 
 static void
 init_main_rtos(void)
@@ -115,36 +97,20 @@ task_sync_get_bits(uint32_t ulBits)
 }
 
 // ----------------------------------------------------------------------
+// FreeRTOS functions
+
+
+// ----------------------------------------------------------------------
 // Core functions
-
-#ifdef ENABLE_DEBUG_TOOLS
-void
-vPrintfTask(void* pvArg)
-{
-	(void)pvArg;
-
-#ifdef TASK_START_EVENT_DBG_PRINTOUT
-	async_printf(async_print_type_str, assigned_name_for_task_logs, 0);
-#endif
-
-	for(;;)
-	{
-		async_printf_sync();
-		vTaskDelay(1);
-	}
-}
-#endif
 
 void
 app_main(void)
 {
-#ifdef ENABLE_DEBUG_TOOLS
-	init_async_printf();
-#endif
+	init_debug_assist();
 	init_main_rtos();
 	init_memory_model();
 	init_gpio();
-	
+
 	init_wireless();
 	init_display();
 	init_osd_stats();
@@ -153,6 +119,8 @@ app_main(void)
 	// --------------------------
 	// start everything now safely
 	task_sync_set_bits(TASK_SYNC_EVENT_BIT_ALL);
+
+	debug_assist_start();
 
 	// I don't want to play with you anymore
 	vTaskDelete(NULL);

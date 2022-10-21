@@ -45,12 +45,22 @@ extern "C" {
 // ----------------------------------------------------------------------
 // Accessors functions
 
+/**
+ * @brief
+ */ 
 void vImgChunkStartDraw(void);
 
 // ----------------------------------------------------------------------
 // Core functions
 
+/**
+ * @brief
+ */
 void init_osd_stats(void);
+
+/**
+ * @brief
+ */
 void init_display(void);
 
 

@@ -1,10 +1,11 @@
 #include "data_common.h"
 #include "debug_tools_conf.h"
+#include "pins_definitions.h"
 #include "wireless_conf.h"
 #include "wireless_main.h"
 
 //
-#include "sdkconfig.h"
+#include <sdkconfig.h>
 //
 #include <driver/gpio.h>
 #include <driver/uart.h>
@@ -14,13 +15,14 @@
 #include <nvs.h>
 #include <nvs_flash.h>
 //
-#include "aes/esp_aes.h"
-#include "esp_private/periph_ctrl.h"
-#include "hal/aes_hal.h"
-#include "hal/aes_ll.h"
-#include "soc/dport_access.h"
-#include "soc/hwcrypto_periph.h"
-#include "soc/periph_defs.h"
+#include <aes/esp_aes.h>
+#include <esp_private/periph_ctrl.h>
+#include <hal/aes_hal.h>
+#include <hal/aes_ll.h>
+#include <soc/dport_access.h>
+#include <soc/hwcrypto_periph.h>
+#include <soc/hwcrypto_reg.h>
+#include <soc/periph_defs.h>
 //
 #include <assert.h>
 #include <stdint.h>
@@ -28,10 +30,6 @@
 
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
-
-/// Single Pin is used for the communication
-/// @attention In normal operation mode this pin MUST be connected to the GND
-#define UART_SYNC_RX_TX_PIN (GPIO_NUM_14)
 
 /// Used UART for the communication
 #define UART_SYNC_NUM (UART_NUM_2)

@@ -29,7 +29,7 @@
 //  - #define YOUR_NAME##_DBG_PRINTOUT
 
 // Print what "TaskName" is started
-// #define ENABLE_DEBUG_TASK_START_EVENT
+// #define ENABLE_TASK_START_EVENT_DBG_PRINTOUT
 
 //
 //#define IMAGE_DECODE_TIME_DBG_PRINTOUT
@@ -51,6 +51,13 @@
 
 //
 // #define WIRELESS_TELL_SCAN_PROGRESS
+
+// This parameter requirer to enable 
+// at "Component config -> FreeRTOS -> Kernel ->":
+//  - configUSE_TRACE_FACILITY
+//  - Enable display of xCoreId in vTaskList
+//  - configGENERATE_RUN_TIME_STATS
+// #define SYS_STATS_DBG_PRINTOUT
 
 
 // ---------------------------------

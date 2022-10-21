@@ -10,17 +10,19 @@ And for anyone, who think next statements are *ok* to deal:
 #### Pros:
 - Easy of use;
 - Acceptable level of latency as 23±4ms. (Measured with 240fps slow-motion camera)
+- No additional hardware is required (like cell phone)
 - Primary QVGA resolution (320x240)
 - Not a slide-show framerate with at least 16fps and up to 25fps! (*Even better with HQVGA or 240x176*)
 - A few programmable GPIOs on ESP-CAM
 - Dirty cheap! Could be done with duct tape, but not literally ;)
 - Reusable parts (In case you don't want play with it anymore)
+- And written on C
 
 #### Cons:
 - Not the best FPV image quality
 - Short range distance (approx. ???m. in best case)
 - No 5GHz support (for now?)
-- High power consumption (ESP-CAM uses approx. 2W on 100% Tx power)
+- High power consumption (ESP-CAM uses approx. 2.5W on 100% Tx power)
 - Extreme heat of *Transmitter* at maximum Tx power (like +70C easy-peasy)
 
 

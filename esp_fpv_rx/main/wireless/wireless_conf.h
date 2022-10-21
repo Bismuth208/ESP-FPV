@@ -31,9 +31,9 @@ extern "C" {
 
 // By default device will use as much as possible power for Transmitting
 // Declare value in percentage with range [WIFI_MIN_TX_POWER_PERCENTAGE : WIFI_MAX_TX_POWER_PERCENTAGE]
-#define DEFAULT_WIFI_TX_POWER_1 (20)
+#define DEFAULT_WIFI_TX_POWER_1 (60)
 // Default Tx value for the Transmitter
-#define DEFAULT_WIFI_TX_POWER_2 (10)
+#define DEFAULT_WIFI_TX_POWER_2 (60)
 
 #define WIFI_MIN_TX_POWER_PERCENTAGE (1)
 #define WIFI_MAX_TX_POWER_PERCENTAGE (100)

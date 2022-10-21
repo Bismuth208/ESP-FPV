@@ -14,6 +14,16 @@
 #include "wireless/wireless_main.h"
 
 //
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+#include <freertos/FreeRTOSConfig.h>
+#include <freertos/event_groups.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
+//
 #include <esp_attr.h>
 #include <esp_timer.h>
 //
@@ -25,19 +35,15 @@
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
 
-// typedef struct
-// {
-// 	uint32_t head;
-// 	uint32_t tail;
-// } image_chunk_offset_t;
+
 
 // ----------------------------------------------------------------------
 // FreeRTOS Variables
 
 #define STACK_WORDS_SIZE_FOR_TASK_IMG_DECODER (2048)
-#define PRIORITY_LEVEL_FOR_TASK_IMG_DECODER   (1)
+#define PRIORITY_LEVEL_FOR_TASK_IMG_DECODER   (2)
 #define PINNED_CORE_FOR_TASK_IMG_DECODER      (0)
-const char* assigned_name_for_task_img_decoder = "img_decoder\n\0";
+const char* assigned_name_for_task_img_decoder = "img_decoder";
 TaskHandle_t xImgDecoderTaskHandler = NULL;
 StaticTask_t xImgDecoderTaskControlBlock;
 StackType_t xImgDecoderStack[STACK_WORDS_SIZE_FOR_TASK_IMG_DECODER];
@@ -68,7 +74,6 @@ uint8_t ucImageMemoryPool[IMAGE_MEMORY_UNPACK_POOL_SIZE] __attribute__((aligned(
 uint32_t ulInputImageDataOffset = 0UL;
 uint8_t* pucInputImageDataPtr = NULL;
 
-// image_chunk_offset_t xImageChunkOffset;
 uint32_t ulImageChunkOffset = 0;
 JpgMagicChunk_t xJpgMagicChunks[IMG_CHUNKS_NUM];
 
@@ -223,21 +228,11 @@ pxImageDecoderGetMagicChunk(void)
 	return &xJpgMagicChunks[ulChunkOffset];
 }
 
-// uint32_t IRAM_ATTR
-// ulImageDecoderGetChunk(void)
-// {
-// 	uint32_t ulChunkOffset = xImageChunkOffset.tail;
-// 	xImageChunkOffset.tail = (xImageChunkOffset.tail + 1) & IMG_CHUNKS_MASK;
-
-// 	return ulChunkOffset;
-// }
-
 
 BaseType_t IRAM_ATTR
 xImageDecoderChunksAvailable(void)
 {
 	return (uxQueueSpacesAvailable(xImgChunksQueueHandler) == IMG_CHUNKS_QUEUE_SIZE) ? pdFALSE : pdTRUE;
-	// return (xImageChunkOffset.tail != xImageChunkOffset.head);
 }
 
 void

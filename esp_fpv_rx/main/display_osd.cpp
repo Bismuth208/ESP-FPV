@@ -14,13 +14,15 @@
 #include "lgfx_ssd1306_s3.hpp"
 
 //
-#include "freertos/FreeRTOS.h"
-#include "freertos/FreeRTOSConfig.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "freertos/timers.h"
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+#include <freertos/FreeRTOSConfig.h>
+#include <freertos/event_groups.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
 //
 #include <esp_attr.h>
 #include <esp_timer.h>
@@ -39,7 +41,7 @@
 #define STACK_WORDS_SIZE_FOR_TASK_IMG_CHUNK_DRAW (2048)
 #define PRIORITY_LEVEL_FOR_TASK_IMG_CHUNK_DRAW   (1)
 #define PINNED_CORE_FOR_TASK_IMG_CHUNK_DRAW      (1)
-const char* assigned_name_for_task_img_chunk_draw = "img_chunk_draw\n\0";
+const char* assigned_name_for_task_img_chunk_draw = "img_chunk_draw";
 TaskHandle_t xImgChunkDrawTaskHandler = NULL;
 StaticTask_t xImgChunkDrawTaskControlBlock;
 StackType_t xImgChunkDrawStack[STACK_WORDS_SIZE_FOR_TASK_IMG_CHUNK_DRAW];
@@ -48,7 +50,7 @@ StackType_t xImgChunkDrawStack[STACK_WORDS_SIZE_FOR_TASK_IMG_CHUNK_DRAW];
 #define STACK_WORDS_SIZE_FOR_TASK_IMG_OSD_DRAW (2048)
 #define PRIORITY_LEVEL_FOR_TASK_IMG_OSD_DRAW   (1)
 #define PINNED_CORE_FOR_TASK_IMG_OSD_DRAW      (1)
-const char* assigned_name_for_task_img_osd_draw = "img_osd_draw\n\0";
+const char* assigned_name_for_task_img_osd_draw = "img_osd_draw";
 TaskHandle_t xImgOsdDrawTaskHandler = NULL;
 StaticTask_t xImgOsdDrawTaskControlBlock;
 StackType_t xImgOsdDrawStack[STACK_WORDS_SIZE_FOR_TASK_IMG_OSD_DRAW];
@@ -111,7 +113,7 @@ static uint32_t ulOsdSyncDraw(TickType_t xTicksToSync);
  * 
  * @note Call only inside ''vImgChunkDrawTask''
  */
-static uint32_t ulImgChunkSyncDraw(TickType_t xTicksToSync);
+// static uint32_t ulImgChunkSyncDraw(TickType_t xTicksToSync);
 
 /**
  * @brief Convert and draw variables
@@ -130,17 +132,34 @@ static void draw_img_chunk(JpgMagicChunk_t* pxJpgMagicChunk);
  */
 static void draw_gui(void);
 
+/**
+ * @brief
+ */
 static void init_display_tft(void);
 
+/**
+ * @brief
+ */
 static void init_display_oled(void);
 
+/**
+ * @brief
+ */
 static void init_osd_rtos(void);
 
-
+/**
+ * @brief
+ */
 static void vOsdUpdaterTimer(TimerHandle_t xTimer);
 
+/**
+ * @brief
+ */
 static void vImgChunkDrawTask(void* pvArg);
 
+/**
+ * @brief
+ */
 static void vImgOsdDrawTask(void* pvArg);
 
 
@@ -201,11 +220,11 @@ ulOsdSyncDraw(TickType_t xTicksToSync)
 	return ulTaskNotifyTake(pdTRUE, xTicksToSync);
 }
 
-static uint32_t
-ulImgChunkSyncDraw(TickType_t xTicksToSync)
-{
-	return ulTaskNotifyTake(pdTRUE, xTicksToSync);
-}
+// static uint32_t
+// ulImgChunkSyncDraw(TickType_t xTicksToSync)
+// {
+// 	return ulTaskNotifyTake(pdTRUE, xTicksToSync);
+// }
 
 
 static void IRAM_ATTR

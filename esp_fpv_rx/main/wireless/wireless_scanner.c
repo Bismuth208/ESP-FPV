@@ -24,7 +24,24 @@
 #include "wireless_conf.h"
 #include "wireless_main.h"
 //
-#include "sdkconfig.h"
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+#include <freertos/FreeRTOSConfig.h>
+#include <freertos/event_groups.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
+//
+#include <aes/esp_aes.h>
+#include <esp_private/periph_ctrl.h>
+#include <hal/aes_hal.h>
+#include <hal/aes_ll.h>
+#include <soc/dport_access.h>
+#include <soc/hwcrypto_periph.h>
+#include <soc/hwcrypto_reg.h>
+#include <soc/periph_defs.h>
 //
 #include <esp_attr.h>
 #include <esp_mesh_internal.h>

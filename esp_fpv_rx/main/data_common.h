@@ -8,21 +8,10 @@ extern "C" {
 //
 #include <driver/gpio.h>
 //
-#include "freertos/FreeRTOS.h"
-#include "freertos/FreeRTOSConfig.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "freertos/timers.h"
-//
 #include <stdint.h>
 
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
-
-#define BUTTON_1 GPIO_NUM_47
-
 
 #define TASK_SYNC_EVENT_BIT_DATA_TX        (1 << 0)
 #define TASK_SYNC_EVENT_BIT_IMG_OSD_DRAW   (1 << 1)
@@ -33,7 +22,8 @@ extern "C" {
 	 TASK_SYNC_EVENT_BIT_IMG_PROCESS)
 
 
-typedef enum {
+typedef enum
+{
 	BUTTON_STATE_PRESSED = 0,
 	BUTTON_STATE_RELEASED
 } button_states_t;
@@ -41,6 +31,13 @@ typedef enum {
 // ----------------------------------------------------------------------
 // Accessors functions
 
+/**
+ * @brief 
+ * 
+ * @param
+ * 
+ * @retval
+ */ 
 button_states_t xReadButton(gpio_num_t gpio_num);
 
 /**
@@ -53,11 +50,22 @@ button_states_t xReadButton(gpio_num_t gpio_num);
  * @param
  * 
  * @retval Convereted value
- */ 
+ */
 int32_t ul_map_val(const int32_t x, int32_t imin, int32_t imax, int32_t omin, int32_t omax);
 
 void task_sync_set_bits(uint32_t ulBits);
 void task_sync_get_bits(uint32_t ulBits);
+
+
+/**
+ * @brief 
+ */
+void init_debug_assist(void);
+
+/**
+ * @brief 
+ */
+void debug_assist_start(void);
 
 
 #ifdef __cplusplus

@@ -6,13 +6,15 @@
 #include "wireless_conf.h"
 
 //
-#include "freertos/FreeRTOS.h"
-#include "freertos/FreeRTOSConfig.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "freertos/timers.h"
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+#include <freertos/FreeRTOSConfig.h>
+#include <freertos/event_groups.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
 //
 #include <esp_attr.h>
 #include <esp_mesh_internal.h>
@@ -21,14 +23,18 @@
 #include <esp_wifi.h>
 #include <nvs_flash.h>
 //
-#include "aes/esp_aes.h"
-#include "esp_private/periph_ctrl.h"
-#include "hal/aes_hal.h"
-#include "hal/aes_ll.h"
-#include "soc/dport_access.h"
-#include "soc/hwcrypto_periph.h"
-#include "soc/periph_defs.h"
-
+#include <aes/esp_aes.h>
+#include <esp_private/periph_ctrl.h>
+#include <hal/aes_hal.h>
+#include <hal/aes_ll.h>
+#include <soc/dport_access.h>
+#include <soc/hwcrypto_periph.h>
+#include <soc/hwcrypto_reg.h>
+#include <soc/periph_defs.h>
+//
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
 
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
@@ -52,7 +58,7 @@ typedef struct
 #define STACK_WORDS_SIZE_FOR_TASK_DATA_TX (2048)
 #define PRIORITY_LEVEL_FOR_TASK_DATA_TX   (1)
 #define PINNED_CORE_FOR_TASK_DATA_TX      (0)
-const char* assigned_name_for_task_data_tx = "\0";
+const char* assigned_name_for_task_data_tx = "data_tx";
 TaskHandle_t xDataTransmitterTaskHandler = NULL;
 StaticTask_t xDataTransmitterTaskControlBlock;
 StackType_t xDataTransmitterStack[STACK_WORDS_SIZE_FOR_TASK_DATA_TX];
@@ -62,6 +68,12 @@ StackType_t xDataTransmitterStack[STACK_WORDS_SIZE_FOR_TASK_DATA_TX];
 QueueHandle_t xFramePacketQueueHandler = NULL;
 StaticQueue_t xFramePacketQueueControlBlock;
 uint32_t xFramePacketQueueStorage[WIFI_TX_PACKETS_NUM];
+
+// #if(WIRELESS_USE_RAW_80211_PACKET == 0)
+// //
+// SemaphoreHandle_t xDataTransmitterTxLockHandler = NULL;
+// StaticSemaphore_t xDataTransmitterTxLockControlBlock;
+// #endif
 
 // ----------------------------------------------------------------------
 // Variables
@@ -166,6 +178,16 @@ static void wifi_raw_packet_rx_cb(void* buf, wifi_promiscuous_pkt_type_t type);
  * @note This function is called ONLY when @ref ''WIRELESS_USE_RAW_80211_PACKET'' is disabled
  */
 static void wifi_espnow_packet_rx_cb(const uint8_t* mac_addr, const uint8_t* data, int data_len);
+
+/**
+ * @brief Callback function from ESP-NOW when ned bunch of data is received.
+ * 
+ * @param mac_addr
+ * @param status see @ref 'esp_now_send_status_t'
+ * 
+ * @note This function is called ONLY when @ref ''WIRELESS_USE_RAW_80211_PACKET'' is disabled
+ */
+static void wifi_espnow_packet_tx_cb(const uint8_t* mac_addr, esp_now_send_status_t status);
 #endif // !WIRELESS_USE_RAW_80211_PACKET
 
 /**
@@ -264,7 +286,7 @@ send_new_packet(const PacketFrame_t* pxPacketFrame)
 		pxPacketFrameToSend = pxPacketFrame;
 	}
 
-#if WIRELESS_USE_RAW_80211_PACKET
+#if(WIRELESS_USE_RAW_80211_PACKET == 1)
 	// TODO: add random stuff
 	// wifi_espnow_raw_packet.magic_packet.random = (uint32_t)
 	wifi_espnow_raw_packet.magic_packet.content.length = ulTxDataLen;
@@ -272,6 +294,7 @@ send_new_packet(const PacketFrame_t* pxPacketFrame)
 	esp_err_t xRes =
 	    esp_wifi_80211_tx(WIFI_IF_STA, &wifi_espnow_raw_packet, sizeof(wifi_espnow_packet_t) + ulTxDataLen, true);
 #else
+	// xSemaphoreTake(xDataTransmitterTxLockHandler, portMAX_DELAY);
 	esp_err_t xRes = esp_now_send(NULL, (const uint8_t*)pxPacketFrameToSend, ulTxDataLen);
 #endif
 
@@ -320,7 +343,7 @@ wifi_espnow_parse_new_data(const uint8_t* data)
 	}
 
 	case PACKET_TYPE_PING: {
-		send_new_packet(pxPacketFrame);
+		send_new_packet((const PacketFrame_t*)pxPacketFrame);
 		break;
 	}
 
@@ -358,7 +381,16 @@ wifi_espnow_parse_new_data(const uint8_t* data)
 	}
 }
 
-#if WIRELESS_USE_RAW_80211_PACKET
+#if(WIRELESS_USE_RAW_80211_PACKET == 0)
+// static void IRAM_ATTR
+// wifi_espnow_packet_tx_cb(const uint8_t* mac_addr, esp_now_send_status_t status)
+// {
+// 	(void)mac_addr;
+// 	(void)status;
+
+// 	xSemaphoreGive(xDataTransmitterTxLockHandler);
+// }
+
 static void IRAM_ATTR
 wifi_raw_packet_rx_cb(void* buf, wifi_promiscuous_pkt_type_t type)
 {
@@ -404,6 +436,10 @@ init_wifi_rtos(void)
 	                                              &xFramePacketQueueControlBlock);
 	assert(xFramePacketQueueHandler);
 
+// #if(WIRELESS_USE_RAW_80211_PACKET == 0)
+// 	xDataTransmitterTxLockHandler = xSemaphoreCreateBinaryStatic(&xDataTransmitterTxLockControlBlock);
+// 	assert(xDataTransmitterTxLockHandler);
+// #endif
 
 	xDataTransmitterTaskHandler = xTaskCreateStaticPinnedToCore((TaskFunction_t)(vDataTransmitterTask),
 	                                                            assigned_name_for_task_data_tx,
@@ -511,8 +547,12 @@ vDataTransmitterTask(void* pvArg)
 
 	task_sync_get_bits(TASK_SYNC_EVENT_BIT_DATA_TX);
 
+#if(WIRELESS_USE_RAW_80211_PACKET == 0)
+	// xSemaphoreGive(xDataTransmitterTxLockHandler);
+#endif
+
 #ifdef TASK_START_EVENT_DBG_PRINTOUT
-	async_printf(async_print_type_str, "vDataTransmitterTask Start\n", 0);
+	async_printf(async_print_type_str, assigned_name_for_task_data_tx, 0);
 #endif
 
 	for(;;)
@@ -521,7 +561,7 @@ vDataTransmitterTask(void* pvArg)
 		while(xQueueReceive(xFramePacketQueueHandler, &ulFramePacketOffset, portMAX_DELAY))
 		{
 			pxPacket = &xPackets[ulFramePacketOffset];
-			send_new_packet(pxPacket);
+			send_new_packet((const PacketFrame_t*)pxPacket);
 		}
 	}
 }
@@ -534,7 +574,7 @@ init_wifi(void)
 {
 	init_wifi_rtos();
 
-#if WIRELESS_USE_RAW_80211_PACKET
+#if(WIRELESS_USE_RAW_80211_PACKET == 1)
 	memcpy(&wifi_espnow_raw_packet.magic_packet, ucDataBlob, sizeof(ucDataBlob));
 #endif
 
@@ -551,7 +591,7 @@ init_wifi(void)
 	ESP_ERROR_CHECK(esp_wifi_set_protocol(WIFI_IF_STA, DEFAULT_WIFI_MODE));
 	ESP_ERROR_CHECK(esp_wifi_set_bandwidth(WIFI_IF_STA, WIFI_BW_HT20));
 
-#if WIRELESS_USE_RAW_80211_PACKET
+#if(WIRELESS_USE_RAW_80211_PACKET == 1)
 	// A bit of trick over ESP-NOW to get RSSI data and connection reliability
 	ESP_ERROR_CHECK(esp_wifi_set_promiscuous_rx_cb(wifi_raw_packet_rx_cb));
 	ESP_ERROR_CHECK(esp_wifi_set_promiscuous(true));
@@ -567,23 +607,6 @@ init_wifi(void)
 	ESP_ERROR_CHECK(esp_wifi_internal_set_fix_rate(WIFI_IF_STA, true, DEFAULT_WIFI_DATA_RATE));
 
 	wifi_set_tx_power(DEFAULT_WIFI_TX_POWER);
-
-#ifdef SELF_MAC_TELL_DBG_PRINTOUT
-	static uint8_t ucNodeMac[6];
-	static uint8_t ucNodeMacStr[30];
-	ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_STA, ucNodeMac));
-
-	snprintf(ucNodeMacStr,
-	         sizeof(ucNodeMacStr),
-	         "Node MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
-	         ucNodeMacStr[0],
-	         ucNodeMacStr[1],
-	         ucNodeMacStr[2],
-	         ucNodeMacStr[3],
-	         ucNodeMacStr[4],
-	         ucNodeMacStr[5]);
-	async_printf(async_print_type_str, ucNodeMacStr, 0);
-#endif
 }
 
 
@@ -595,8 +618,9 @@ init_espnow(void)
 #if(WIRELESS_USE_RAW_80211_PACKET == 0)
 	ESP_ERROR_CHECK(esp_now_init());
 	ESP_ERROR_CHECK(esp_wifi_config_espnow_rate(WIFI_IF_STA, DEFAULT_WIFI_DATA_RATE));
-	ESP_ERROR_CHECK(esp_now_set_pmk((const uint8_t *)&(xWifiEncryptionGetKeys())->ucPMK[0]));
+	ESP_ERROR_CHECK(esp_now_set_pmk((const uint8_t*)&(xWifiEncryptionGetKeys())->ucPMK[0]));
 	ESP_ERROR_CHECK(esp_now_register_recv_cb(wifi_espnow_packet_rx_cb));
+	// ESP_ERROR_CHECK(esp_now_register_send_cb(wifi_espnow_packet_tx_cb));
 	ESP_ERROR_CHECK(esp_now_add_peer((const esp_now_peer_info_t*)&xPeerNode));
 #endif
 }

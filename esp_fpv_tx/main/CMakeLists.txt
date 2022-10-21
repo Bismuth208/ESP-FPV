@@ -1,6 +1,7 @@
 set(fpv_srcs
     "fpv_main.c"
     "camera.c"
+    "debug_assist.c"
     )
 
 set(wireless_srcs

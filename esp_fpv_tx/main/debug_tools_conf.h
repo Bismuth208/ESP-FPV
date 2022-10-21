@@ -29,7 +29,7 @@ extern "C" {
 //  - #define YOUR_NAME##_DBG_PRINTOUT
 
 // Print what "TaskName" is started
-//#define ENABLE_DEBUG_TASK_START_EVENT
+//#define ENABLE_TASK_START_EVENT_DBG_PRINTOUT
 
 // esp_now
 //#define ESP_NOW_SEND_PACKET_FAIL_DBG_PRINTOUT
@@ -63,6 +63,13 @@ extern "C" {
 
 //
 //#define SELF_MAC_TELL_DBG_PRINTOUT
+
+// This parameter requirer to enable 
+// at "Component config -> FreeRTOS -> Kernel ->":
+//  - configUSE_TRACE_FACILITY
+//  - Enable display of xCoreId in vTaskList
+//  - configGENERATE_RUN_TIME_STATS
+// #define SYS_STATS_DBG_PRINTOUT
 
 // ---------------------------------
 // Uncomment defines below to enable logs:

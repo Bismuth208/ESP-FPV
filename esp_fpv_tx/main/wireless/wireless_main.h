@@ -1,10 +1,12 @@
 #ifndef _WIRELESS_MAIN_H
 #define _WIRELESS_MAIN_H
 
-#include <esp_mesh_internal.h>
+//
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+//
 #include <esp_now.h>
-#include <esp_wifi.h>
-#include <nvs_flash.h>
 //
 #include <stdint.h>
 
