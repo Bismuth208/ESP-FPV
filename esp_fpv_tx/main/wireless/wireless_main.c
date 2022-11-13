@@ -436,10 +436,10 @@ init_wifi_rtos(void)
 	                                              &xFramePacketQueueControlBlock);
 	assert(xFramePacketQueueHandler);
 
-// #if(WIRELESS_USE_RAW_80211_PACKET == 0)
-// 	xDataTransmitterTxLockHandler = xSemaphoreCreateBinaryStatic(&xDataTransmitterTxLockControlBlock);
-// 	assert(xDataTransmitterTxLockHandler);
-// #endif
+	// #if(WIRELESS_USE_RAW_80211_PACKET == 0)
+	// 	xDataTransmitterTxLockHandler = xSemaphoreCreateBinaryStatic(&xDataTransmitterTxLockControlBlock);
+	// 	assert(xDataTransmitterTxLockHandler);
+	// #endif
 
 	xDataTransmitterTaskHandler = xTaskCreateStaticPinnedToCore((TaskFunction_t)(vDataTransmitterTask),
 	                                                            assigned_name_for_task_data_tx,
@@ -490,9 +490,14 @@ set_packet_to_queue(void)
 #endif
 }
 
+
 void IRAM_ATTR
 vWirelessSendArray(wifi_packet_type_t xType, uint8_t* pucData, size_t ulDataSize, BaseType_t xUseEncryption)
 {
+#ifdef NEW_IMAGE_FRAME_TX_TIME_DBG_PROFILER
+	profile_point(profile_point_start, NEW_IMAGE_FRAME_TX_TIME_DBG_PROFILER_POINT_ID);
+#endif
+
 	uint32_t ulTotalPackets = 0;
 
 	// Reuse as it have blockId field.
@@ -531,6 +536,10 @@ vWirelessSendArray(wifi_packet_type_t xType, uint8_t* pucData, size_t ulDataSize
 	{
 		async_printf(async_print_type_u32, "Total packets %u\n", ulTotalPackets);
 	}
+#endif
+
+#ifdef NEW_IMAGE_FRAME_TX_TIME_DBG_PROFILER
+	profile_point(profile_point_end, NEW_IMAGE_FRAME_TX_TIME_DBG_PROFILER_POINT_ID);
 #endif
 }
 

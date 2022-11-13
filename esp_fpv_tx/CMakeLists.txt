@@ -13,10 +13,11 @@ set(COMPONENT_ADD_INCLUDEDIRS
 
 set(EXTRA_COMPONENT_DIRS 
     ../libs
+    ./components
     )
 
 if (IDF_VERSION_MAJOR GREATER_EQUAL 5)
-    set(COMPONENT_REQUIRES esp32-camera esp_psram esp_timer soc hal driver wpa_supplicant mbedtls)
+    set(COMPONENT_REQUIRES esp_timer soc hal driver wpa_supplicant mbedtls)
 endif()
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)

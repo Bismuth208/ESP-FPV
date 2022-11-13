@@ -1,3 +1,6 @@
+#ifndef _CAMERA_PINS_H
+#define _CAMERA_PINS_H
+
 #define CAMERA_MODEL_AI_THINKER
 
 
@@ -99,3 +102,6 @@
 #else
 #error "Camera model not selected"
 #endif
+
+
+#endif /* _CAMERA_PINS_H */

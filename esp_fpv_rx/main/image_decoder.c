@@ -292,6 +292,8 @@ vImageProcessorTask(void* pvArg)
 #endif
 		}
 	}
+
+	vTaskDelete(NULL);
 }
 
 

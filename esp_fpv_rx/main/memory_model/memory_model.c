@@ -170,6 +170,8 @@ init_memory_model_rtos(void)
 BaseType_t
 xMemoryModelRegisterCallback(memory_model_callback_t xFunc)
 {
+	assert(xFunc);
+
 	BaseType_t xRes = pdFALSE;
 	vMemoryModelLock();
 
@@ -191,6 +193,8 @@ xMemoryModelRegisterCallback(memory_model_callback_t xFunc)
 BaseType_t
 xMemoryModelRegisterItem(memory_model_types_t xDataId)
 {
+	assert(xDataId < MEMORY_MODEL_TOTAL);
+
 	BaseType_t xRes = pdFALSE;
 	vMemoryModelLock();
 
@@ -213,12 +217,9 @@ xMemoryModelRegisterItem(memory_model_types_t xDataId)
 void
 vMemoryModelSet(memory_model_types_t xDataId, uint32_t ulData)
 {
-	vMemoryModelLock();
+	assert(xDataId < MEMORY_MODEL_TOTAL);
 
-	if(xDataId >= MEMORY_MODEL_TOTAL)
-	{
-		return;
-	}
+	vMemoryModelLock();
 
 	memory_model_t* pxStorage = &xMemoryModelStorage[xDataId];
 
@@ -235,13 +236,10 @@ vMemoryModelSet(memory_model_types_t xDataId, uint32_t ulData)
 uint32_t
 ulMemoryModelGet(memory_model_types_t xDataId)
 {
+	assert(xDataId < MEMORY_MODEL_TOTAL);
+
 	uint32_t ulValue = 0;
 	vMemoryModelLock();
-
-	if(xDataId >= MEMORY_MODEL_TOTAL)
-	{
-		return 0;
-	}
 
 	ulValue = xMemoryModelStorage[xDataId].ulValue;
 

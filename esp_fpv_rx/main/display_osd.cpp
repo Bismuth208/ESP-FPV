@@ -440,6 +440,8 @@ vImgChunkDrawTask(void* pvArg)
 			draw_img_chunk(pxImageDecoderGetMagicChunk());
 		}
 	}
+
+	vTaskDelete(NULL);
 }
 
 static void
@@ -469,6 +471,8 @@ vImgOsdDrawTask(void* pvArg)
 			draw_osd_screen();
 		}
 	}
+
+	vTaskDelete(NULL);
 }
 
 // ----------------------------------------------------------------------

@@ -6,6 +6,7 @@
 
 #include "wireless_main.h"
 
+#include "button_poller.h"
 #include "data_common.h"
 #include "debug_tools_conf.h"
 #include "image_decoder.h"
@@ -747,6 +748,8 @@ vDataTransmitterTask(void* pvArg)
 
 		// vTaskDelay(pdMS_TO_TICKS(1));
 	}
+
+	vTaskDelete(NULL);
 }
 
 // ----------------------------------------------------------------------

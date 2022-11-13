@@ -11,7 +11,13 @@
 // ----------------------------------------------------------------------
 /// Single Pin is used for the communication
 /// @attention In normal operation mode this pin MUST be connected to the GND
-#define UART_SYNC_RX_TX_PIN (GPIO_NUM_14)
+/// @note 3bit SD_MMC will be not possible! Only 1bit mode.
+#define UART_SYNC_RX_TX_PIN (GPIO_NUM_12)
+
+
+// ----------------------------------------------------------------------
+// On ESP-CAM from Ai-Thinker
+#define CAMERA_LED_PIN (GPIO_NUM_4)
 
 // ----------------------------------------------------------------------
 

@@ -1,3 +1,4 @@
+#include "button_poller.h"
 #include "data_common.h"
 #include "debug_tools_conf.h"
 #include "display_osd.h"
@@ -44,21 +45,11 @@ StaticEventGroup_t xTaskSyncBlockEventGroup;
 // ----------------------------------------------------------------------
 // Static functions declaration
 
-static void init_gpio(void);
-
 static void init_main_rtos(void);
 
 
 // ----------------------------------------------------------------------
 // Static functions
-
-
-static void
-init_gpio(void)
-{
-	gpio_set_direction(BUTTON_1, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(BUTTON_1, GPIO_PULLUP_ONLY);
-}
 
 
 static void
@@ -70,13 +61,6 @@ init_main_rtos(void)
 
 // ----------------------------------------------------------------------
 // Accessors functions
-
-button_states_t
-xReadButton(gpio_num_t gpio_num)
-{
-	return (button_states_t)gpio_get_level(gpio_num);
-}
-
 
 int32_t
 ul_map_val(const int32_t x, int32_t imin, int32_t imax, int32_t omin, int32_t omax)
@@ -107,9 +91,10 @@ void
 app_main(void)
 {
 	init_debug_assist();
-	init_main_rtos();
 	init_memory_model();
-	init_gpio();
+	init_button_poller();
+
+	init_main_rtos();
 
 	init_wireless();
 	init_display();

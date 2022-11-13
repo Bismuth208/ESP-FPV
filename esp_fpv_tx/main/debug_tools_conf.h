@@ -102,6 +102,15 @@ extern "C" {
 // #define AES_ENCRYPTION_TIME_DBG_PROFILER
 #define AES_ENCRYPTION_TIME_DBG_PROFILER_POINT_ID (9)
 
+// Check for how long it take to find actual Jpg EOI
+// #define JPG_EOI_SEARCH_TIME_DBG_PROFILER
+#define JPG_EOI_SEARCH_TIME_DBG_PROFILER_POINT_ID (11)
+
+// How much time it takes to convert and copy data from DMA callback.
+// And how much time it takes to copy whole image to Tx queue
+// #define JPG_DMA_COPY_TIME_DBG_PROFILER
+#define JPG_DMA_COPY_TIME_DBG_PROFILER_POINT_ID (12)
+
 
 #ifdef __cplusplus
 }

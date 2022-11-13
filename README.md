@@ -3,7 +3,7 @@
 Not the best, but interesting as proof-of-concept FPV system.
 ***
 
-## For who's this project ?
+## Who's it for ?
 For enthusiasts, hobbyists and DIY persons.
 And for anyone, who think next statements are *ok* to deal:
 
@@ -11,6 +11,7 @@ And for anyone, who think next statements are *ok* to deal:
 - Easy of use;
 - Acceptable level of latency as 23±4ms. (Measured with 240fps slow-motion camera)
 - No additional hardware is required (like cell phone)
+- No PSRAM is required (i.e. it's possible to use simple bare ESP32 modules with enough pins)
 - Primary QVGA resolution (320x240)
 - Not a slide-show framerate with at least 16fps and up to 25fps! (*Even better with HQVGA or 240x176*)
 - A few programmable GPIOs on ESP-CAM
@@ -58,7 +59,7 @@ For the pairing you will need just a few wires.
 #### Pairing
 To do so, follow next steps:
   - Connect together Grounding Pins on both *Receiver* and *Transmitter*.
-  - Connect together UART pins. *IO14* for *Transmitter* and *IO19* for *Receiver*.
+  - Connect together UART pins. *IO12* for *Transmitter* and *IO19* for *Receiver*.
   - First power-on ESP-CAM, then *Receiver*.
   - Wait until Video stream will appear on *Receiver* Screen.
   - Remove UART connection from *Receiver* and *Transmitter*. 
@@ -74,7 +75,7 @@ Once both devices got synced, Video stream should start automatically!
 
 
 ### Possible future plans
-Once Espressif will announce dual-core (Not the ESP32-C5) controller with 5GHz support it would be ultimate beast!
+Once Espressif will announce dual-core (Not the ESP32-C5) controller with 5GHz support it would be an ultimate beast!
 It's well know what 5GHz is way much better than 2.4GHz in FPV ;)
 
 Move from ILI9341 TFT to a couple ST7789 IPS displays.
@@ -89,12 +90,23 @@ Nothing special is required!
 - ILI9341 TFT display or similar with resolution at least 320x240
 - SSD1306 OLED with resolution 128x64
 - External antenna for ESP32-S3 and/or ESP-CAM (Optional only for better range)
+- At least one CP2102 or similar (to burn the FW)
 
 
 
 #### Software:
 - ESP-IDF not lower than v5.0
-- ESP-Camera git repository component [downloaded](https://github.com/espressif/esp32-camera/archive/refs/heads/master.zip "ESP-CAM component download link") and placed into esp/esp-idf/components/esp32-camera
+- VSCode with ESP-IDF plugin (Please, use Google-fu for howto setup it)
+
+
+#### Steps:
+- Import project (any of two) to VSCode
+- Build the FW with: idf.py build
+- Connect USB-UART 
+- run: idf.py -p /dev/tty.usbserial-0001 flash
+- Repeat for the second project
+- ~Profit!~
+- When everything is wired do the Pairing (see description above)
 
 
 Main design and development for the *Receiver* is done for ESP32-S3.
@@ -103,6 +115,11 @@ An a ESP32 is also possible to use, but with lower resolution and/or framerate.
 Please note, what Single-core ESP32/S2 is highly not recommended to use,
 as the whole architecture has been designed ONLY for the dual-core controllers!
 That's because Jpg decoding takes a LOT of horsepower and controller must be juicy and beefy!
+
+
+#### Special notes
+Thank's to @jeanlemotan and his improved for low latency ESP-CAM library!
+Link to his project [here](https://github.com/jeanlemotan/esp32-cam-fpv. "esp32-cam-fpv by @jeanlemotan")
 
 
 ***

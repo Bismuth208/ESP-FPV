@@ -1,15 +1,21 @@
-set(fpv_srcs
+set(FPV_SRCS
     "fpv_main.c"
     "camera.c"
-    "debug_assist.c"
     )
 
-set(wireless_srcs
+set(WIRELESS_MODULE_SRCS
     "wireless/wireless_encryption.c"
     "wireless/wireless_main.c"
     )
 
-idf_component_register(SRCS ${fpv_srcs} ${wireless_srcs}
-                    INCLUDE_DIRS ".")
+set(MISC_SRCS
+    "debug_assist.c"
+    )
+
+idf_component_register(SRCS
+    ${FPV_SRCS}
+    ${WIRELESS_MODULE_SRCS}
+    ${MISC_SRCS}
+    INCLUDE_DIRS ".")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE "-Wno-format")

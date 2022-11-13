@@ -6,8 +6,6 @@ extern "C" {
 #endif
 
 //
-#include <driver/gpio.h>
-//
 #include <stdint.h>
 
 // ----------------------------------------------------------------------
@@ -22,23 +20,9 @@ extern "C" {
 	 TASK_SYNC_EVENT_BIT_IMG_PROCESS)
 
 
-typedef enum
-{
-	BUTTON_STATE_PRESSED = 0,
-	BUTTON_STATE_RELEASED
-} button_states_t;
-
 // ----------------------------------------------------------------------
 // Accessors functions
 
-/**
- * @brief 
- * 
- * @param
- * 
- * @retval
- */ 
-button_states_t xReadButton(gpio_num_t gpio_num);
 
 /**
  * @brief Just a linear range converter

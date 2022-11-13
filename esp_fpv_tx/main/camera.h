@@ -22,6 +22,9 @@ extern "C" {
 #define CAMERA_USE_FPS_LIMIT_TIME ((1000) / CAMERA_USE_FPS_LIMIT_FPS)
 #endif
 
+// 16k for QVGA is pretty enougth
+#define IMG_JPG_FILE_MAX_SIZE (16 * 1024)
+
 // ----------------------------------------------------------------------
 // Accessors functions
 
