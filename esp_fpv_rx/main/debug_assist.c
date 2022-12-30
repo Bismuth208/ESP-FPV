@@ -140,7 +140,7 @@ static void
 debug_sys_stats_plotter_timer(void)
 {
 	vGetSysStats((char*)&ucWriteBuffer[0]);
-	async_printf(async_print_type_str, (const char*)&ucWriteBuffer[0], 0);
+	ASYNC_PRINTF(1, async_print_type_str, (const char*)&ucWriteBuffer[0], 0);
 }
 #endif // SYS_STATS_DBG_PRINTOUT
 
@@ -193,9 +193,7 @@ vPrintfTask(void* pvArg)
 {
 	(void)pvArg;
 
-#ifdef TASK_START_EVENT_DBG_PRINTOUT
-	async_printf(async_print_type_str, assigned_name_for_task_printf, 0);
-#endif
+	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_printf, 0);
 
 	for(;;)
 	{

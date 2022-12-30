@@ -78,8 +78,6 @@ Once both devices got synced, Video stream should start automatically!
 Once Espressif will announce dual-core (Not the ESP32-C5) controller with 5GHz support it would be an ultimate beast!
 It's well know what 5GHz is way much better than 2.4GHz in FPV ;)
 
-Move from ILI9341 TFT to a couple ST7789 IPS displays.
-
 
 ### Ok, i've got it, what's need ?
 Nothing special is required!
@@ -87,7 +85,8 @@ Nothing special is required!
 #### Hardware:
 - ESP-CAM with ESP32 as *Transmitter* (See Ai-Thinker)
 - ESP32-S3-DevKitC or anything with ESP32-S3 onboard as *Receiver*
-- ILI9341 TFT display or similar with resolution at least 320x240
+- Pair of ST7789(v2) IPS 1.69" displays or similar with resolution at least 240x280
+- Pair of Fresnel lenses
 - SSD1306 OLED with resolution 128x64
 - External antenna for ESP32-S3 and/or ESP-CAM (Optional only for better range)
 - At least one CP2102 or similar (to burn the FW)

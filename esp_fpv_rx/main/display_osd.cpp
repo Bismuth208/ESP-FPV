@@ -10,7 +10,8 @@
 #define LGFX_ESP_WROVER_KIT
 #define LGFX_USE_V1
 #include "../../libs/LovyanGFX/src/LovyanGFX.hpp"
-#include "lgfx_ili9341_s3.hpp"
+// #include "lgfx_ili9341_s3.hpp"
+#include "lgfx_st7789v2_s3.hpp"
 #include "lgfx_ssd1306_s3.hpp"
 
 //
@@ -75,7 +76,8 @@ bool sRedrawRSSi = false;
 
 // ----------------------------
 // Each class for each screen
-LGFX_ILI9341_S3 tft;
+// LGFX_ILI9341_S3 tft;
+LGFX_ST7789V2_S3 tft;
 LGFX_SSD1306_S3 tft_oled;
 
 
@@ -230,9 +232,7 @@ ulOsdSyncDraw(TickType_t xTicksToSync)
 static void IRAM_ATTR
 draw_osd_screen(void)
 {
-#ifdef OSD_DRAW_TIME_DBG_PROFILER
-	profile_point(profile_point_start, OSD_DRAW_TIME_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(OSD_DRAW_TIME_DBG_PROFILER, profile_point_start);
 
 	if(sRedrawRSSi)
 	{
@@ -284,17 +284,14 @@ draw_osd_screen(void)
 	sprintf(&gui_text_buf[0], "%03u", ulAvgFrameTime);
 	tft_oled.drawString(&gui_text_buf[0], TEXT_POS_X_FOR_FRAME_TIME, TEXT_POS_Y_FOR_FRAME_TIME);
 
-#ifdef OSD_DRAW_TIME_DBG_PROFILER
-	profile_point(profile_point_end, OSD_DRAW_TIME_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(OSD_DRAW_TIME_DBG_PROFILER, profile_point_end);
 }
 
 static void IRAM_ATTR
 draw_img_chunk(JpgMagicChunk_t* pxJpgMagicChunk)
 {
-#ifdef IMG_CHUNK_DRAW_DBG_PROFILER
-	profile_point(profile_point_start, IMG_CHUNK_DRAW_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(IMG_CHUNK_DRAW_DBG_PROFILER, profile_point_start);
+
 	// tft.startWrite();
 
 	// tft.setAddrWindow(pxJpgMagicChunk->usPosX, pxJpgMagicChunk->usPosY, pxJpgMagicChunk->usW, pxJpgMagicChunk->usH);
@@ -309,9 +306,7 @@ draw_img_chunk(JpgMagicChunk_t* pxJpgMagicChunk)
 
 	// tft.endWrite();
 
-#ifdef IMG_CHUNK_DRAW_DBG_PROFILER
-	profile_point(profile_point_end, IMG_CHUNK_DRAW_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(IMG_CHUNK_DRAW_DBG_PROFILER, profile_point_end);
 }
 
 static void
@@ -347,7 +342,7 @@ init_display_tft(void)
 	// --------------------------
 	// Draw basic OSD GUI
 	tft.drawRect(2, 2, tft.width() - 2, tft.height() - 2, TFT_WHITE);
-	tft.drawRect(38, 8, 244, 180, TFT_WHITE);
+	// tft.drawRect(38, 8, 244, 180, TFT_WHITE);
 }
 
 static void
@@ -417,9 +412,7 @@ vOsdUpdaterTimer(TimerHandle_t xTimer)
 	// Tell main GUI thread to update OSD
 	vOsdStartDraw();
 
-#ifdef OSD_UPDATE_TIME_DBG_PRINTOUT
-	async_printf(async_print_type_u32, assigned_name_for_task_img_osd_draw, 0);
-#endif
+	ASYNC_PRINTF(OSD_UPDATE_TIME_DBG_PRINTOUT, async_print_type_u32, assigned_name_for_task_img_osd_draw, 0);
 }
 
 static void
@@ -429,9 +422,7 @@ vImgChunkDrawTask(void* pvArg)
 
 	task_sync_get_bits(TASK_SYNC_EVENT_BIT_IMG_CHUNK_DRAW);
 
-#ifdef TASK_START_EVENT_DBG_PRINTOUT
-	async_printf(async_print_type_str, assigned_name_for_task_img_chunk_draw, 0);
-#endif
+	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_img_chunk_draw, 0);
 
 	for(;;)
 	{

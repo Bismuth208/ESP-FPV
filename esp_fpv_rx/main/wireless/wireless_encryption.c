@@ -195,18 +195,27 @@ vWirelessUpdateNvsSecretKeys(BaseType_t xForcedSave)
 	ESP_ERROR_CHECK(nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &nvs_keys_handle));
 	ESP_ERROR_CHECK(nvs_get_blob(nvs_keys_handle, ENCRYPTION_KEYS_NVS_NAME, NULL, &required_size));
 
-	// Keys have been found?
-	if(required_size > 0)
-	{
-		ESP_ERROR_CHECK(nvs_get_blob(nvs_keys_handle, ENCRYPTION_KEYS_NVS_NAME, &xSecretSync, &required_size));
-	}
-
 	if(xForcedSave || (required_size != sizeof(pairing_data_t)))
 	{
+	SAVE_ENCRYPTION_KEYS_NVS:
+
 		ESP_ERROR_CHECK(nvs_set_blob(nvs_keys_handle, ENCRYPTION_KEYS_NVS_NAME, &xSecretSync, required_size));
+		ESP_ERROR_CHECK(nvs_commit(nvs_keys_handle));
+	}
+	else
+	{
+		// Keys have been found?
+		if(required_size > 0)
+		{
+			ESP_ERROR_CHECK(nvs_get_blob(nvs_keys_handle, ENCRYPTION_KEYS_NVS_NAME, &xSecretSync, &required_size));
+		}
+		else
+		{
+			// No keys, so save them
+			goto SAVE_ENCRYPTION_KEYS_NVS;
+		}
 	}
 
-	ESP_ERROR_CHECK(nvs_commit(nvs_keys_handle));
 	nvs_close(nvs_keys_handle);
 }
 
@@ -221,9 +230,7 @@ wifi_crypt_packet(const uint8_t* pucDataIn, uint8_t* pucDataOut, size_t xInputSi
 	// TODO: BD-0003 add lock for multithread access for wifi_crypt_packet
 	// TODO: BD-0004 add whole pucDataIn encryption for wifi_crypt_packet
 
-#ifdef AES_ENCRYPTION_TIME_DBG_PROFILER
-	profile_point(profile_point_start, AES_ENCRYPTION_TIME_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(AES_ENCRYPTION_TIME_DBG_PROFILER, profile_point_start);
 
 	if(ucCryptLastMode != ucMode)
 	{
@@ -252,9 +259,7 @@ wifi_crypt_packet(const uint8_t* pucDataIn, uint8_t* pucDataOut, size_t xInputSi
 		       xInputSize - AES_ENCRYPTION_MAX_BYTES);
 	}
 
-#ifdef AES_ENCRYPTION_TIME_DBG_PROFILER
-	profile_point(profile_point_end, AES_ENCRYPTION_TIME_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(AES_ENCRYPTION_TIME_DBG_PROFILER, profile_point_end);
 }
 
 

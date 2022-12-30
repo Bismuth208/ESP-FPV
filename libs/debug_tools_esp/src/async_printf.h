@@ -1,6 +1,6 @@
 /**
  * @file     async_printf.h
- * 
+ *
  * @brief    Provide light-weight async printf
  */
 
@@ -16,20 +16,27 @@ extern "C" {
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
 
+#ifdef ENABLE_DEBUG_TOOLS
+#define ASYNC_PRINTF(name, item_type, new_msg, new_value)                      \
+  if (name == 1) {                                                             \
+    async_printf(item_type, new_msg, new_value);                               \
+  }
+#else
+#define ASYNC_PRINTF(name, item_type, new_msg, new_value)
+#endif
+
 /// Describes what type of item should be printed and formatted right
-typedef enum
-{
-	/// Simple text string with no use of any value
-	async_print_type_str = 0,
-	/// Print string with formatted uint32_t value
-	async_print_type_u32 = 1,
+typedef enum {
+  /// Simple text string with no use of any value
+  async_print_type_str = 0,
+  /// Print string with formatted uint32_t value
+  async_print_type_u32 = 1,
 } async_print_type_t;
 
-typedef struct
-{
-	async_print_type_t type;
-	const char* msg;
-	uint32_t value;
+typedef struct {
+  async_print_type_t type;
+  const char *msg;
+  uint32_t value;
 } async_print_item_t;
 
 // ----------------------------------------------------------------------
@@ -42,9 +49,11 @@ typedef struct
  * @param new_msg
  * @param new_value
  *
- * @attention this is async printf, it's not possible to use local buffers for new_msg!
+ * @attention this is async printf, it's not possible to use local buffers for
+ * new_msg!
  */
-void async_printf(async_print_type_t item_type, const char* new_msg, uint32_t new_value);
+void async_printf(async_print_type_t item_type, const char *new_msg,
+                  uint32_t new_value);
 
 /**
  * @brief Check if there is any items in buffer and print'em

@@ -104,7 +104,8 @@ static const camera_config_t xCamConfig_no_psram = {
 	* FRAMESIZE_QQVGA  - 160 × 120 - q=5
 	*/
 	.pixel_format = PIXFORMAT_JPEG,
-	.frame_size   = FRAMESIZE_QVGA,
+	// .frame_size   = FRAMESIZE_QVGA,
+	.frame_size   = FRAMESIZE_240X240,
 	.jpeg_quality = 20, //10-63 lower number means higher quality
 	
 	.fb_count     = 2,
@@ -211,9 +212,7 @@ camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 		uint32_t* pulDest = (uint32_t*)&ucImageData[ucImageDataSize];
 		ucImageDataSize += count;
 
-#ifdef JPG_DMA_COPY_TIME_DBG_PROFILER
-		profile_point(profile_point_start, JPG_DMA_COPY_TIME_DBG_PROFILER_POINT_ID);
-#endif
+		PROFILE_POINT(JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_start);
 
 		do
 		{
@@ -249,9 +248,8 @@ camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 
 				ucImageDataSize -= (usDataOffsetExtra);
 
-#ifdef JPG_EOI_SEARCH_TIME_DBG_PROFILER
-				profile_point(profile_point_start, JPG_EOI_SEARCH_TIME_DBG_PROFILER_POINT_ID);
-#endif
+				PROFILE_POINT(JPG_EOI_SEARCH_TIME_DBG_PROFILER, profile_point_start);
+
 				// Start from the second half of the image what potentially contain garbage
 				uint8_t* pucGarbage = (uint8_t*)&ucImageData[usDataOffsetExtra + (ucImageDataSize / 2)];
 
@@ -260,9 +258,7 @@ camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 					;
 				ucImageDataSize = pucGarbage - (uint8_t*)&ucImageData[usDataOffsetExtra];
 
-#ifdef JPG_EOI_SEARCH_TIME_DBG_PROFILER
-				profile_point(profile_point_end, JPG_EOI_SEARCH_TIME_DBG_PROFILER_POINT_ID);
-#endif
+				PROFILE_POINT(JPG_EOI_SEARCH_TIME_DBG_PROFILER, profile_point_end);
 
 				// Copy data to Tx queue
 				vWirelessSendArray(PACKET_TYPE_FRAME_DATA, &ucImageData[usDataOffsetExtra], ucImageDataSize, pdFALSE);
@@ -271,9 +267,7 @@ camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 			ucImageDataSize = 0;
 		}
 
-#ifdef JPG_DMA_COPY_TIME_DBG_PROFILER
-		profile_point(profile_point_end, JPG_DMA_COPY_TIME_DBG_PROFILER_POINT_ID);
-#endif
+		PROFILE_POINT(JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_end);
 	}
 }
 
@@ -329,7 +323,7 @@ vCameraSetLEDState(uint32_t ulState)
 	else
 	{
 		ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
-	ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
+		ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
 	}
 #endif
 }
@@ -364,9 +358,7 @@ vForceFrameUpdateTimer(TimerHandle_t xTimer)
 	(void)xTimer;
 	vStartNewFrame();
 
-#ifdef TIMER_FRAME_UPDATE_DBG_PRINTOUT
-	async_printf(async_print_type_str, "vForceFrameUpdateTimer\n", 0);
-#endif
+	ASYNC_PRINTF(TIMER_FRAME_UPDATE_DBG_PRINTOUT, async_print_type_str, "vForceFrameUpdateTimer\n", 0);
 }
 
 
@@ -377,9 +369,7 @@ vCameraTask(void* pvArg)
 	// No further execution until full initialization
 	task_sync_get_bits(TASK_SYNC_EVENT_BIT_CAMERA);
 
-#ifdef ENABLE_TASK_START_EVENT_DBG_PRINTOUT
-	async_printf(async_print_type_str, assigned_name_for_task_camera, 0);
-#endif
+	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_camera, 0);
 
 	if(ulWaitNewFrameAck(portMAX_DELAY))
 	{
@@ -389,7 +379,7 @@ vCameraTask(void* pvArg)
 
 	xTimerStart(xForceFrameUpdateTimer, 0UL);
 
-#ifdef IMAGE_TX_TIME_DBG_PRINTOUT
+#if IMAGE_TX_TIME_DBG_PRINTOUT
 	int64_t fr_start = 0;
 	int64_t fr_end = 0;
 #endif
@@ -407,12 +397,12 @@ vCameraTask(void* pvArg)
 		if(ulWaitNewFrameAck(portMAX_DELAY))
 #endif
 		{
-#ifdef IMAGE_TX_TIME_DBG_PRINTOUT
+#if IMAGE_TX_TIME_DBG_PRINTOUT
 			fr_start = esp_timer_get_time();
 			take_new_image_frame();
 			fr_end = esp_timer_get_time();
 
-			async_printf(async_print_type_u32, "tFr time: %u\n", fr_end - fr_start);
+			ASYNC_PRINTF(1, async_print_type_u32, "tFr time: %u\n", fr_end - fr_start);
 #else
 			take_new_image_frame();
 #endif
@@ -464,8 +454,8 @@ init_camera(void)
 
 	if(err != ESP_OK)
 	{
-#ifdef CAMERA_INIT_FAIL_DBG_PRINTOUT
-		async_printf(async_print_type_u32, "Camera init failed with error 0x%x\n", err);
+#if CAMERA_INIT_FAIL_DBG_PRINTOUT
+		ASYNC_PRINTF(1, async_print_type_u32, "Camera init failed with error 0x%x\n", err);
 		vTaskDelay(pdMS_TO_TICKS(500));
 #endif
 		assert(pdFALSE);

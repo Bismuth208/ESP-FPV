@@ -154,7 +154,7 @@ PacketFrame_t xPacket;
 // ----------------------------------------------------------------------
 // Static functions declaration
 
-#ifdef WIFI_RX_DATA_CB_DBG_PRINTOUT
+#if WIFI_RX_DATA_CB_DBG_PRINTOUT
 static void wifi_espnow_dump_playload(uint8_t* pucPayloadBuff);
 
 static void wifi_espnow_dump_mac(const uint8_t* mac_addr);
@@ -247,7 +247,7 @@ static void vDataTransmitterTask(void* pvArg);
 // Static functions
 
 
-#ifdef WIFI_RX_DATA_CB_DBG_PRINTOUT
+#if WIFI_RX_DATA_CB_DBG_PRINTOUT
 static void
 wifi_espnow_dump_playload(const char* text, uint8_t* pucPayloadBuff, size_t size, uint32_t id)
 {
@@ -259,9 +259,9 @@ wifi_espnow_dump_playload(const char* text, uint8_t* pucPayloadBuff, size_t size
 		offset += sprintf(&cBuff[id][offset], "%02X ", pucPayloadBuff[i]);
 	}
 
-	async_printf(async_print_type_str, text, 0);
-	async_printf(async_print_type_str, &cBuff[id][0], 0);
-	async_printf(async_print_type_str, "\n\n", 0);
+	ASYNC_PRINTF(1, async_print_type_str, text, 0);
+	ASYNC_PRINTF(1, async_print_type_str, &cBuff[id][0], 0);
+	ASYNC_PRINTF(1, async_print_type_str, "\n\n", 0);
 }
 
 static void
@@ -278,8 +278,8 @@ wifi_espnow_dump_mac(const uint8_t* mac_addr)
 	         mac_addr[4],
 	         mac_addr[5]);
 
-	async_printf(async_print_type_str, "Last Packet Recv from: ", 0);
-	async_printf(async_print_type_str, macStr, 0);
+	ASYNC_PRINTF(1, async_print_type_str, "Last Packet Recv from: ", 0);
+	ASYNC_PRINTF(1, async_print_type_str, macStr, 0);
 }
 #endif // WIFI_RX_DATA_CB_DBG_PRINTOUT
 
@@ -302,9 +302,7 @@ wifi_set_tx_power(int8_t ic_new_tx_power)
 static esp_err_t IRAM_ATTR
 send_new_packet(const PacketFrame_t* pxPacketFrame)
 {
-#ifdef ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER
-	profile_point(profile_point_start, ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER, profile_point_start);
 
 	const PacketFrame_t* pxPacketFrameToSend = NULL;
 	uint32_t ulTxDataLen = sizeof(PacketHeader_t) + pxPacketFrame->xHeader.ucDataSize;
@@ -337,16 +335,13 @@ send_new_packet(const PacketFrame_t* pxPacketFrame)
 	esp_err_t xRes = esp_now_send(NULL, (const uint8_t*)pxPacketFrameToSend, ulTxDataLen);
 #endif
 
-#ifdef ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER
-	profile_point(profile_point_end, ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER, profile_point_end);
 
 	if(ESP_OK != xRes)
 	{
 		// do something...
-#ifdef ESP_NOW_SEND_PACKET_FAIL_DBG_PRINTOUT
-		async_printf(async_print_type_u32, "esp_now_send failed with %u\n", (uint32_t)xRes);
-#endif
+		ASYNC_PRINTF(
+		    ESP_NOW_SEND_PACKET_FAIL_DBG_PRINTOUT, async_print_type_u32, "esp_now_send failed with %u\n", (uint32_t)xRes);
 	}
 
 	return xRes;
@@ -358,9 +353,7 @@ wifi_espnow_parse_new_data(const uint8_t* data, int data_len)
 {
 	const PacketFrame_t* pxPacketFrame = (const PacketFrame_t*)data;
 
-#ifdef ESP_NOW_RX_DATA_DBG_PROFILER
-	profile_point(profile_point_start, ESP_NOW_RX_DATA_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(ESP_NOW_RX_DATA_DBG_PROFILER, profile_point_start);
 
 	if(pxPacketFrame->xHeader.ucEncrypted)
 	{
@@ -439,18 +432,14 @@ wifi_espnow_parse_new_data(const uint8_t* data, int data_len)
 	}
 	}
 
-#ifdef ESP_NOW_RX_DATA_DBG_PROFILER
-	profile_point(profile_point_end, ESP_NOW_RX_DATA_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(ESP_NOW_RX_DATA_DBG_PROFILER, profile_point_end);
 }
 
 
 static void IRAM_ATTR
 wifi_raw_packet_rx_cb(void* buf, wifi_promiscuous_pkt_type_t type)
 {
-#ifdef WIFI_RX_PACKET_CB_DBG_PRINTOUT
-	async_printf(async_print_type_u32, "wifi_raw_packet_rx_cb %u\n", (uint32_t)type);
-#endif
+	ASYNC_PRINTF(WIFI_RX_PACKET_CB_DBG_PRINTOUT, async_print_type_u32, "wifi_raw_packet_rx_cb %u\n", (uint32_t)type);
 
 	const wifi_promiscuous_pkt_t* px_promiscuous_pkt = (wifi_promiscuous_pkt_t*)buf;
 	const wifi_espnow_packet_t* px_espnow_packet = (wifi_espnow_packet_t*)px_promiscuous_pkt->payload;
@@ -641,9 +630,7 @@ vDataTransmitterTask(void* pvArg)
 	xSemaphoreGive(xDataTransmitterTxLockHandler);
 #endif
 
-#ifdef TASK_START_EVENT_DBG_PRINTOUT
-	async_printf(async_print_type_str, assigned_name_for_task_data_tx, 0);
-#endif
+	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_data_tx, 0);
 
 	// Force channels scan if user requested so.
 	if(xReadButton(BUTTON_1) == BUTTON_STATE_PRESSED)
