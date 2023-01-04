@@ -14,14 +14,10 @@ extern "C" {
 #include "memory_model_types.h"
 
 //
-#include "freertos/FreeRTOS.h"
-#include "freertos/FreeRTOSConfig.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "freertos/timers.h"
-
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+//
 #include <stdint.h>
 
 // ----------------------------------------------------------------------

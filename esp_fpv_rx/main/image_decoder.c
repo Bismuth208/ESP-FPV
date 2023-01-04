@@ -14,6 +14,16 @@
 #include "wireless/wireless_main.h"
 
 //
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+#include <freertos/FreeRTOSConfig.h>
+#include <freertos/event_groups.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
+//
 #include <esp_attr.h>
 #include <esp_timer.h>
 //
@@ -25,19 +35,14 @@
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
 
-// typedef struct
-// {
-// 	uint32_t head;
-// 	uint32_t tail;
-// } image_chunk_offset_t;
 
 // ----------------------------------------------------------------------
 // FreeRTOS Variables
 
 #define STACK_WORDS_SIZE_FOR_TASK_IMG_DECODER (2048)
-#define PRIORITY_LEVEL_FOR_TASK_IMG_DECODER   (1)
+#define PRIORITY_LEVEL_FOR_TASK_IMG_DECODER   (2)
 #define PINNED_CORE_FOR_TASK_IMG_DECODER      (0)
-const char* assigned_name_for_task_img_decoder = "img_decoder\n\0";
+const char* assigned_name_for_task_img_decoder = "img_decoder";
 TaskHandle_t xImgDecoderTaskHandler = NULL;
 StaticTask_t xImgDecoderTaskControlBlock;
 StackType_t xImgDecoderStack[STACK_WORDS_SIZE_FOR_TASK_IMG_DECODER];
@@ -68,7 +73,6 @@ uint8_t ucImageMemoryPool[IMAGE_MEMORY_UNPACK_POOL_SIZE] __attribute__((aligned(
 uint32_t ulInputImageDataOffset = 0UL;
 uint8_t* pucInputImageDataPtr = NULL;
 
-// image_chunk_offset_t xImageChunkOffset;
 uint32_t ulImageChunkOffset = 0;
 JpgMagicChunk_t xJpgMagicChunks[IMG_CHUNKS_NUM];
 
@@ -112,12 +116,8 @@ jd_input(JDEC* jdec, uint8_t* buf, uint32_t len)
 static uint32_t IRAM_ATTR
 jd_output(JDEC* jdec, void* bitmap, JRECT* jrect)
 {
-#ifdef JD_CHUNK_DECODE_TIME_DBG_PROFILER
-	profile_point(profile_point_end, JD_CHUNK_DECODE_TIME_DBG_PROFILER_POINT_ID);
-#endif
-#ifdef JD_OUTPUT_DBG_PROFILER
-	profile_point(profile_point_start, JD_OUTPUT_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(JD_CHUNK_DECODE_TIME_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(JD_OUTPUT_DBG_PROFILER, profile_point_start);
 
 	JpgMagicChunk_t* pxJpgMagicChunk = NULL;
 
@@ -126,8 +126,8 @@ jd_output(JDEC* jdec, void* bitmap, JRECT* jrect)
 #endif
 	{
 		pxJpgMagicChunk = &xJpgMagicChunks[ulImageChunkOffset];
-		pxJpgMagicChunk->usPosX = jrect->left + IMG_FRAME_OFFSET_X;
-		pxJpgMagicChunk->usPosY = jrect->top + IMG_FRAME_OFFSET_Y;
+		pxJpgMagicChunk->usPosX = jrect->left + IMG_CHUNK_POS_X_OFS;
+		pxJpgMagicChunk->usPosY = jrect->top + IMG_CHUNK_POS_Y_OFS;
 		pxJpgMagicChunk->usW = jrect->right + 1 - jrect->left;
 		pxJpgMagicChunk->usH = jrect->bottom + 1 - jrect->top;
 		pxJpgMagicChunk->usPixels = (pxJpgMagicChunk->usW * pxJpgMagicChunk->usH);
@@ -147,12 +147,8 @@ jd_output(JDEC* jdec, void* bitmap, JRECT* jrect)
 		}
 	}
 
-#ifdef JD_OUTPUT_DBG_PROFILER
-	profile_point(profile_point_end, JD_OUTPUT_DBG_PROFILER_POINT_ID);
-#endif
-#ifdef JD_CHUNK_DECODE_TIME_DBG_PROFILER
-	profile_point(profile_point_start, JD_CHUNK_DECODE_TIME_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(JD_OUTPUT_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(JD_CHUNK_DECODE_TIME_DBG_PROFILER, profile_point_start);
 
 	return 1;
 }
@@ -166,9 +162,7 @@ process_received_image(void)
 
 	ulInputImageDataOffset = 0UL;
 
-#ifdef JD_DECODE_DBG_PROFILER
-	profile_point(profile_point_start, JD_DECODE_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(JD_DECODE_DBG_PROFILER, profile_point_start);
 
 	// Analyze input data
 	jresult = jd_prepare(&jdec, jd_input, &ucImageMemoryPool[0], IMAGE_MEMORY_UNPACK_POOL_SIZE, 0);
@@ -178,9 +172,7 @@ process_received_image(void)
 		jd_decomp(&jdec, jd_output);
 	}
 
-#ifdef JD_DECODE_DBG_PROFILER
-	profile_point(profile_point_end, JD_DECODE_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(JD_DECODE_DBG_PROFILER, profile_point_end);
 }
 
 
@@ -223,21 +215,11 @@ pxImageDecoderGetMagicChunk(void)
 	return &xJpgMagicChunks[ulChunkOffset];
 }
 
-// uint32_t IRAM_ATTR
-// ulImageDecoderGetChunk(void)
-// {
-// 	uint32_t ulChunkOffset = xImageChunkOffset.tail;
-// 	xImageChunkOffset.tail = (xImageChunkOffset.tail + 1) & IMG_CHUNKS_MASK;
-
-// 	return ulChunkOffset;
-// }
-
 
 BaseType_t IRAM_ATTR
 xImageDecoderChunksAvailable(void)
 {
 	return (uxQueueSpacesAvailable(xImgChunksQueueHandler) == IMG_CHUNKS_QUEUE_SIZE) ? pdFALSE : pdTRUE;
-	// return (xImageChunkOffset.tail != xImageChunkOffset.head);
 }
 
 void
@@ -270,9 +252,7 @@ vImageProcessorTask(void* pvArg)
 
 	xTimerStart(xFrameCounterTimer, 0UL);
 
-#ifdef TASK_START_EVENT_DBG_PRINTOUT
-	async_printf(async_print_type_str, assigned_name_for_task_img_decoder, 0);
-#endif
+	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_img_decoder, 0);
 
 	for(;;)
 	{
@@ -291,12 +271,12 @@ vImageProcessorTask(void* pvArg)
 			ulFrameTimeCount += (uint32_t)((fr_end - fr_start) / 1000);
 			++ulFramesCount;
 
-#ifdef IMAGE_DECODE_TIME_DBG_PRINTOUT
 			// How much time did decoding take
-			async_printf(async_print_type_u32, "ulFrameTimeCount: %ums\n", ulFrameTimeCount);
-#endif
+			ASYNC_PRINTF(IMAGE_DECODE_TIME_DBG_PRINTOUT, async_print_type_u32, "ulFrameTimeCount: %ums\n", ulFrameTimeCount);
 		}
 	}
+
+	vTaskDelete(NULL);
 }
 
 

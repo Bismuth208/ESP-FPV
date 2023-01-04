@@ -8,12 +8,23 @@
 
 #include "memory_model_conf.h"
 
+//
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+#include <freertos/FreeRTOSConfig.h>
+#include <freertos/event_groups.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
+//
+#include <assert.h>
+#include <string.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <assert.h>
-#include <string.h>
 
 
 // ----------------------------------------------------------------------
@@ -33,7 +44,7 @@ typedef struct
 #define STACK_WORDS_SIZE_FOR_TASK_MEMORY_MODEL (2048)
 #define PRIORITY_LEVEL_FOR_TASK_MEMORY_MODEL   (1)
 #define PINNED_CORE_FOR_TASK_MEMORY_MODEL      (0)
-const char* assigned_name_for_task_memory_model = "memory_model\n\0";
+const char* assigned_name_for_task_memory_model = "memory_model";
 TaskHandle_t xMemoryModelTaskHandler = NULL;
 StaticTask_t xMemoryModelTaskControlBlock;
 StackType_t xMemoryModelStack[STACK_WORDS_SIZE_FOR_TASK_MEMORY_MODEL];
@@ -159,6 +170,8 @@ init_memory_model_rtos(void)
 BaseType_t
 xMemoryModelRegisterCallback(memory_model_callback_t xFunc)
 {
+	assert(xFunc);
+
 	BaseType_t xRes = pdFALSE;
 	vMemoryModelLock();
 
@@ -180,6 +193,8 @@ xMemoryModelRegisterCallback(memory_model_callback_t xFunc)
 BaseType_t
 xMemoryModelRegisterItem(memory_model_types_t xDataId)
 {
+	assert(xDataId < MEMORY_MODEL_TOTAL);
+
 	BaseType_t xRes = pdFALSE;
 	vMemoryModelLock();
 
@@ -202,12 +217,9 @@ xMemoryModelRegisterItem(memory_model_types_t xDataId)
 void
 vMemoryModelSet(memory_model_types_t xDataId, uint32_t ulData)
 {
-	vMemoryModelLock();
+	assert(xDataId < MEMORY_MODEL_TOTAL);
 
-	if(xDataId >= MEMORY_MODEL_TOTAL)
-	{
-		return;
-	}
+	vMemoryModelLock();
 
 	memory_model_t* pxStorage = &xMemoryModelStorage[xDataId];
 
@@ -224,13 +236,10 @@ vMemoryModelSet(memory_model_types_t xDataId, uint32_t ulData)
 uint32_t
 ulMemoryModelGet(memory_model_types_t xDataId)
 {
+	assert(xDataId < MEMORY_MODEL_TOTAL);
+
 	uint32_t ulValue = 0;
 	vMemoryModelLock();
-
-	if(xDataId >= MEMORY_MODEL_TOTAL)
-	{
-		return 0;
-	}
 
 	ulValue = xMemoryModelStorage[xDataId].ulValue;
 
@@ -239,7 +248,7 @@ ulMemoryModelGet(memory_model_types_t xDataId)
 }
 
 // ----------------------------------------------------------------------
-// Core functions
+// FreeRTOS functions
 
 static void
 vMemoryModelTask(void* pvArg)
@@ -273,6 +282,8 @@ vMemoryModelTask(void* pvArg)
 	vTaskDelete(NULL);
 }
 
+// ----------------------------------------------------------------------
+// Core functions
 
 void
 init_memory_model(void)

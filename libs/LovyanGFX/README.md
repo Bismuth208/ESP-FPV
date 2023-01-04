@@ -67,6 +67,7 @@ This library has the following advantages.
     - Arduino RP2040
 
   - ディスプレイ Displays
+    - GC9107 (M5AtomS3)
     - GC9A01
     - GDEW0154M09 (M5Stack CoreInk)
     - HX8357
@@ -82,6 +83,7 @@ This library has the following advantages.
     - RA8875
     - RM68120
     - SH110x (SH1106, SH1107, M5Stack Unit OLED)
+    - S6D04K1
     - SSD1306 (SSD1309)
     - SSD1327
     - SSD1331

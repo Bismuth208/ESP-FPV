@@ -6,26 +6,38 @@
 
 #include "wireless_main.h"
 
+#include "button_poller.h"
 #include "data_common.h"
 #include "debug_tools_conf.h"
 #include "image_decoder.h"
 #include "memory_model/memory_model.h"
+#include "pins_definitions.h"
 #include "wireless_conf.h"
+//
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+#include <freertos/FreeRTOSConfig.h>
+#include <freertos/event_groups.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
+//
+#include <aes/esp_aes.h>
+#include <esp_private/periph_ctrl.h>
+#include <hal/aes_hal.h>
+#include <hal/aes_ll.h>
+#include <soc/dport_access.h>
+#include <soc/hwcrypto_periph.h>
+#include <soc/hwcrypto_reg.h>
+#include <soc/periph_defs.h>
 //
 #include <esp_attr.h>
 #include <esp_mesh_internal.h>
-#include <esp_now.h>
 #include <esp_timer.h>
 #include <esp_wifi.h>
 #include <nvs_flash.h>
-//
-#include "aes/esp_aes.h"
-#include "esp_private/periph_ctrl.h"
-#include "hal/aes_hal.h"
-#include "hal/aes_ll.h"
-#include "soc/dport_access.h"
-#include "soc/hwcrypto_periph.h"
-#include "soc/periph_defs.h"
 //
 #include <assert.h>
 #include <stdint.h>
@@ -52,9 +64,9 @@ typedef struct
 // FreeRTOS Variables
 
 #define STACK_WORDS_SIZE_FOR_TASK_DATA_TX (3072)
-#define PRIORITY_LEVEL_FOR_TASK_DATA_TX   (1)
+#define PRIORITY_LEVEL_FOR_TASK_DATA_TX   (2)
 #define PINNED_CORE_FOR_TASK_DATA_TX      (1)
-const char* assigned_name_for_task_data_tx = "data_tx\n\0";
+const char* assigned_name_for_task_data_tx = "data_tx";
 TaskHandle_t xDataTransmitterTaskHandler = NULL;
 StaticTask_t xDataTransmitterTaskControlBlock;
 StackType_t xDataTransmitterStack[STACK_WORDS_SIZE_FOR_TASK_DATA_TX];
@@ -139,11 +151,10 @@ BaseType_t xFirstFrame = pdTRUE;
 PacketFrame_t xPacket;
 
 
-
 // ----------------------------------------------------------------------
 // Static functions declaration
 
-#ifdef WIFI_RX_DATA_CB_DBG_PRINTOUT
+#if WIFI_RX_DATA_CB_DBG_PRINTOUT
 static void wifi_espnow_dump_playload(uint8_t* pucPayloadBuff);
 
 static void wifi_espnow_dump_mac(const uint8_t* mac_addr);
@@ -236,7 +247,7 @@ static void vDataTransmitterTask(void* pvArg);
 // Static functions
 
 
-#ifdef WIFI_RX_DATA_CB_DBG_PRINTOUT
+#if WIFI_RX_DATA_CB_DBG_PRINTOUT
 static void
 wifi_espnow_dump_playload(const char* text, uint8_t* pucPayloadBuff, size_t size, uint32_t id)
 {
@@ -248,9 +259,9 @@ wifi_espnow_dump_playload(const char* text, uint8_t* pucPayloadBuff, size_t size
 		offset += sprintf(&cBuff[id][offset], "%02X ", pucPayloadBuff[i]);
 	}
 
-	async_printf(async_print_type_str, text, 0);
-	async_printf(async_print_type_str, &cBuff[id][0], 0);
-	async_printf(async_print_type_str, "\n\n", 0);
+	ASYNC_PRINTF(1, async_print_type_str, text, 0);
+	ASYNC_PRINTF(1, async_print_type_str, &cBuff[id][0], 0);
+	ASYNC_PRINTF(1, async_print_type_str, "\n\n", 0);
 }
 
 static void
@@ -267,8 +278,8 @@ wifi_espnow_dump_mac(const uint8_t* mac_addr)
 	         mac_addr[4],
 	         mac_addr[5]);
 
-	async_printf(async_print_type_str, "Last Packet Recv from: ", 0);
-	async_printf(async_print_type_str, macStr, 0);
+	ASYNC_PRINTF(1, async_print_type_str, "Last Packet Recv from: ", 0);
+	ASYNC_PRINTF(1, async_print_type_str, macStr, 0);
 }
 #endif // WIFI_RX_DATA_CB_DBG_PRINTOUT
 
@@ -291,9 +302,7 @@ wifi_set_tx_power(int8_t ic_new_tx_power)
 static esp_err_t IRAM_ATTR
 send_new_packet(const PacketFrame_t* pxPacketFrame)
 {
-#ifdef ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER
-	profile_point(profile_point_start, ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER, profile_point_start);
 
 	const PacketFrame_t* pxPacketFrameToSend = NULL;
 	uint32_t ulTxDataLen = sizeof(PacketHeader_t) + pxPacketFrame->xHeader.ucDataSize;
@@ -314,7 +323,7 @@ send_new_packet(const PacketFrame_t* pxPacketFrame)
 		pxPacketFrameToSend = pxPacketFrame;
 	}
 
-#if WIRELESS_USE_RAW_80211_PACKET
+#if(WIRELESS_USE_RAW_80211_PACKET == 1)
 	// TODO: BD-0005 add random stuff for magic_packet.random
 	// wifi_espnow_raw_packet.magic_packet.random = (uint32_t)
 	wifi_espnow_raw_packet.magic_packet.content.length = ulTxDataLen;
@@ -323,20 +332,16 @@ send_new_packet(const PacketFrame_t* pxPacketFrame)
 	    esp_wifi_80211_tx(WIFI_IF_STA, &wifi_espnow_raw_packet, sizeof(wifi_espnow_packet_t) + ulTxDataLen, true);
 #else
 	xSemaphoreTake(xDataTransmitterTxLockHandler, portMAX_DELAY);
-
 	esp_err_t xRes = esp_now_send(NULL, (const uint8_t*)pxPacketFrameToSend, ulTxDataLen);
 #endif
 
-#ifdef ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER
-	profile_point(profile_point_end, ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER, profile_point_end);
 
 	if(ESP_OK != xRes)
 	{
 		// do something...
-#ifdef ESP_NOW_SEND_PACKET_FAIL_DBG_PRINTOUT
-		async_printf(async_print_type_u32, "esp_now_send failed with %u\n", (uint32_t)xRes);
-#endif
+		ASYNC_PRINTF(
+		    ESP_NOW_SEND_PACKET_FAIL_DBG_PRINTOUT, async_print_type_u32, "esp_now_send failed with %u\n", (uint32_t)xRes);
 	}
 
 	return xRes;
@@ -348,9 +353,7 @@ wifi_espnow_parse_new_data(const uint8_t* data, int data_len)
 {
 	const PacketFrame_t* pxPacketFrame = (const PacketFrame_t*)data;
 
-#ifdef ESP_NOW_RX_DATA_DBG_PROFILER
-	profile_point(profile_point_start, ESP_NOW_RX_DATA_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(ESP_NOW_RX_DATA_DBG_PROFILER, profile_point_start);
 
 	if(pxPacketFrame->xHeader.ucEncrypted)
 	{
@@ -429,18 +432,14 @@ wifi_espnow_parse_new_data(const uint8_t* data, int data_len)
 	}
 	}
 
-#ifdef ESP_NOW_RX_DATA_DBG_PROFILER
-	profile_point(profile_point_end, ESP_NOW_RX_DATA_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(ESP_NOW_RX_DATA_DBG_PROFILER, profile_point_end);
 }
 
 
 static void IRAM_ATTR
 wifi_raw_packet_rx_cb(void* buf, wifi_promiscuous_pkt_type_t type)
 {
-#ifdef WIFI_RX_PACKET_CB_DBG_PRINTOUT
-	async_printf(async_print_type_u32, "wifi_raw_packet_rx_cb %u\n", (uint32_t)type);
-#endif
+	ASYNC_PRINTF(WIFI_RX_PACKET_CB_DBG_PRINTOUT, async_print_type_u32, "wifi_raw_packet_rx_cb %u\n", (uint32_t)type);
 
 	const wifi_promiscuous_pkt_t* px_promiscuous_pkt = (wifi_promiscuous_pkt_t*)buf;
 	const wifi_espnow_packet_t* px_espnow_packet = (wifi_espnow_packet_t*)px_promiscuous_pkt->payload;
@@ -462,7 +461,7 @@ wifi_raw_packet_rx_cb(void* buf, wifi_promiscuous_pkt_type_t type)
 				xWirelessSendEvent(W_MSG_EVENT_RSSI_UPDATE);
 			}
 
-#if WIRELESS_USE_RAW_80211_PACKET
+#if(WIRELESS_USE_RAW_80211_PACKET == 1)
 			wifi_espnow_parse_new_data(px_espnow_packet->content.body, px_espnow_packet->content.length);
 #endif
 
@@ -631,9 +630,7 @@ vDataTransmitterTask(void* pvArg)
 	xSemaphoreGive(xDataTransmitterTxLockHandler);
 #endif
 
-#ifdef TASK_START_EVENT_DBG_PRINTOUT
-	async_printf(async_print_type_str, assigned_name_for_task_data_tx, 0);
-#endif
+	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_data_tx, 0);
 
 	// Force channels scan if user requested so.
 	if(xReadButton(BUTTON_1) == BUTTON_STATE_PRESSED)
@@ -660,7 +657,7 @@ vDataTransmitterTask(void* pvArg)
 				PacketHeader_t* pxPacket = (PacketHeader_t*)&xPacket;
 				pxPacket->ulValue = 0;
 				pxPacket->ucType = PACKET_TYPE_ACK;
-				send_new_packet(&xPacket);
+				send_new_packet((const PacketFrame_t*)pxPacket);
 				break;
 			}
 
@@ -670,7 +667,7 @@ vDataTransmitterTask(void* pvArg)
 				pxPacket->xHeader.ucType = PACKET_TYPE_PING;
 				pxPacket->xHeader.ucDataSize = sizeof(uint64_t);
 				pxPacket->ullTimestamp = esp_timer_get_time();
-				send_new_packet(&xPacket);
+				send_new_packet((const PacketFrame_t*)pxPacket);
 				break;
 			}
 
@@ -696,11 +693,12 @@ vDataTransmitterTask(void* pvArg)
 				uint8_t ucCurrentChannel = (uint8_t)ulMemoryModelGet(MEMORY_MODEL_WIFI_CURRENT_CHANNEL);
 				pxPacket->ucFrameData[0] = ucCurrentChannel;
 
-				esp_err_t xRes = send_new_packet(pxPacket);
+				esp_err_t xRes = send_new_packet((const PacketFrame_t*)pxPacket);
 
 				if(ESP_OK == xRes)
 				{
 					// Wait msg to be transferred over wifi for at least 50ms.
+					// And wait for the Transmitter to switch the WiFi channel.
 					vTaskDelay(pdMS_TO_TICKS(50));
 					ESP_ERROR_CHECK(esp_wifi_set_channel(ucCurrentChannel, WIFI_SECOND_CHAN_NONE));
 
@@ -726,6 +724,7 @@ vDataTransmitterTask(void* pvArg)
 				pxPacket->xHeader.ucType = PACKET_TYPE_TX_POWER_UPDATE;
 				pxPacket->xHeader.ucDataSize = 1;
 				pxPacket->ucFrameData[0] = (uint8_t)ulMemoryModelGet(MEMORY_MODEL_WIFI_TX_POWER_2);
+				send_new_packet((const PacketFrame_t*)pxPacket);
 				break;
 			}
 
@@ -736,6 +735,8 @@ vDataTransmitterTask(void* pvArg)
 
 		// vTaskDelay(pdMS_TO_TICKS(1));
 	}
+
+	vTaskDelete(NULL);
 }
 
 // ----------------------------------------------------------------------
@@ -746,7 +747,7 @@ init_wifi(void)
 {
 	init_wifi_rtos();
 
-#if WIRELESS_USE_RAW_80211_PACKET
+#if(WIRELESS_USE_RAW_80211_PACKET == 1)
 	memcpy(&wifi_espnow_raw_packet.magic_packet, ucDataBlob, sizeof(ucDataBlob));
 #endif
 
@@ -778,23 +779,6 @@ init_wifi(void)
 
 	wifi_set_tx_power(DEFAULT_WIFI_TX_POWER_1);
 
-#ifdef SELF_MAC_TELL_DBG_PRINTOUT
-	static uint8_t ucNodeMac[6];
-	static uint8_t ucNodeMacStr[30];
-	ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_STA, ucNodeMac));
-
-	snprintf(ucNodeMacStr,
-	         sizeof(ucNodeMacStr),
-	         "Node MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
-	         ucNodeMacStr[0],
-	         ucNodeMacStr[1],
-	         ucNodeMacStr[2],
-	         ucNodeMacStr[3],
-	         ucNodeMacStr[4],
-	         ucNodeMacStr[5]);
-	async_printf(async_print_type_str, ucNodeMacStr, 0);
-#endif
-
 	// Now it's time to set up memory model for WiFi
 	init_wifi_memory_model();
 }
@@ -807,7 +791,7 @@ init_espnow(void)
 #if(WIRELESS_USE_RAW_80211_PACKET == 0)
 	ESP_ERROR_CHECK(esp_now_init());
 	ESP_ERROR_CHECK(esp_wifi_config_espnow_rate(WIFI_IF_STA, DEFAULT_WIFI_DATA_RATE));
-	ESP_ERROR_CHECK(esp_now_set_pmk((const uint8_t *)&(xWifiEncryptionGetKeys())->ucPMK[0]));
+	ESP_ERROR_CHECK(esp_now_set_pmk((const uint8_t*)&(xWifiEncryptionGetKeys())->ucPMK[0]));
 	ESP_ERROR_CHECK(esp_now_register_recv_cb(wifi_espnow_packet_rx_cb));
 	ESP_ERROR_CHECK(esp_now_register_send_cb(wifi_espnow_packet_tx_cb));
 	ESP_ERROR_CHECK(esp_now_add_peer((const esp_now_peer_info_t*)&xPeerNode));

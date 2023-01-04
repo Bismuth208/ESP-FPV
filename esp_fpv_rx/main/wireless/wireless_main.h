@@ -8,24 +8,18 @@
 #ifndef _WIRELESS_MAIN_H
 #define _WIRELESS_MAIN_H
 
+//
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
+//
+#include <esp_now.h>
+//
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//
-#include "freertos/FreeRTOS.h"
-#include "freertos/FreeRTOSConfig.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "freertos/timers.h"
-
-#include <esp_mesh_internal.h>
-#include <esp_now.h>
-#include <esp_wifi.h>
-#include <nvs_flash.h>
-#include <stdint.h>
 
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
@@ -189,14 +183,14 @@ typedef struct
  * @brief Fill device MAC address which is required for Pairing
  * 
  * @param pucMAC Pointer to the byte array where to store self MAC address
- */ 
+ */
 void vWirelessGetOwnMAC(uint8_t* pucMAC);
 
 /**
  * @brief Apply loaded Keys from NVS and New one from Pairing
  * 
  * @param pxKeysData Pointer to the Secret Key Storage
- */ 
+ */
 void vWirelessSetNodeKeys(pairing_data_t* pxKeysData);
 
 /**

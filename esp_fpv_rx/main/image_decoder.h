@@ -8,13 +8,9 @@ extern "C" {
 #include "tjpg_decoder/tjpgd.h"
 
 //
-#include "freertos/FreeRTOS.h"
-#include "freertos/FreeRTOSConfig.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "freertos/timers.h"
+#include <sdkconfig.h>
+//
+#include <freertos/FreeRTOS.h>
 
 
 // ----------------------------------------------------------------------
@@ -33,16 +29,10 @@ typedef struct
 } JpgMagicChunk_t;
 
 
-#if 0
-// This values for HQVGA
-#define IMG_FRAME_OFFSET_X (40)
-#define IMG_FRAME_OFFSET_Y (10)
-#endif
-#if 1
-// This values for QVGA
-#define IMG_FRAME_OFFSET_X (0)
-#define IMG_FRAME_OFFSET_Y (0)
-#endif
+// This values for 240x240(280)
+// Note, Y=20 offset only applied for ST7789v2
+#define IMG_CHUNK_POS_X_OFS (20)
+#define IMG_CHUNK_POS_Y_OFS (0)
 
 // Amount of small decoded blocks of image provided from jd_output decoder
 // Be careful, each chunk use sizeof JpgMagicChunk_t

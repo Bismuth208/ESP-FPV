@@ -1,6 +1,3 @@
-# In progress:
-
-
 # TODO:
 BD-0033 Add binaries for every Country
 BD-0032 Add flow charts: Initialization, Data transmission, Per-module flow
@@ -29,12 +26,3 @@ BD-0005 add random stuff for magic_packet.random
 BD-0004 add whole pucDataIn encryption for wifi_crypt_packet
 BD-0003 add lock for multithread access for wifi_crypt_packet
 BD-0002 replace magic number for IMG chunk size.
-
-
-# DONE:
-BD-0025 Add "pairing" of receiver and transmitter via Holding "some button" or "pairing cable"
-BD-0012 Rewrite Memory model with better architecture and performance
-BD-0023 Rewrite debug_tools
-BD-0020 Initial Jpg header send
-BD-0007 AirScanner start with GPIO set to low	
-BD-0001 fix for limited range due to North America.

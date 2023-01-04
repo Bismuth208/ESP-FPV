@@ -44,7 +44,7 @@ namespace lgfx
 //----------------------------------------------------------------------------
 
   enum GWFPGA_Inst_Def
-  { 
+  {
     ISC_NOOP          = 0x02,
     ISC_ERASE         = 0x05,
     ERASE_DONE        = 0x09,
@@ -124,7 +124,7 @@ namespace lgfx
     ESP_LOGI(TAG, "Starting Writing to SRAM...");
     JTAG_WriteInst(ISC_ENABLE);
     JTAG_WriteInst(FAST_PROGRAM);
-    
+
     JTAG_MoveTap(TAP_IDLE, TAP_DRSHIFT);
 
     int32_t rle_len = -1;
@@ -286,10 +286,24 @@ namespace lgfx
       if (lgfx::gpio_in(TDO_PIN)) { out += 1 << i; }
     };
     JTAG_MoveTap(TAP_DREXIT1,  TAP_IDLE);
-    return out;   
+    return out;
   }
 
 //----------------------------------------------------------------------------
+
+  std::uint8_t Panel_M5HDMI::HDMI_Trans::readRegister(std::uint8_t register_address)
+  {
+    std::uint8_t buffer;
+    lgfx::i2c::transactionWriteRead(this->HDMI_Trans_config.i2c_port, this->HDMI_Trans_config.i2c_addr, &register_address, 1, &buffer, 1, this->HDMI_Trans_config.freq_read);
+    return buffer;
+  }
+
+  std::uint16_t Panel_M5HDMI::HDMI_Trans::readRegister16(std::uint8_t register_address)
+  {
+    std::uint8_t buffer[2];
+    lgfx::i2c::transactionWriteRead(this->HDMI_Trans_config.i2c_port, this->HDMI_Trans_config.i2c_addr, &register_address, 1, buffer, 2, this->HDMI_Trans_config.freq_read);
+    return (static_cast<std::uint16_t>(buffer[0]) << 8) | buffer[1];
+  }
 
   bool Panel_M5HDMI::HDMI_Trans::writeRegister(uint8_t register_address, uint8_t value)
   {
@@ -346,7 +360,11 @@ namespace lgfx
   {
     auto id = this->readChipID();
     {
-      static constexpr const uint8_t data_1[] = { 0xff, 0x82, 0xD6, 0x8E, 0xD7, 0x04, 0xff, 0x84, 0x06, 0x08, 0x07, 0x10, 0x09, 0x00, 0x0F, 0xAB, 0x34, 0xD5, 0x35, 0x00, 0x36, 0x30, 0x37, 0x00, 0x3C, 0x21,
+// 96kHz audio setting.
+//    static constexpr const uint8_t data_1[] = { 0xff, 0x82, 0xD6, 0x8E, 0xD7, 0x04, 0xff, 0x84, 0x06, 0x08, 0x07, 0x10, 0x09, 0x00, 0x0F, 0xAB, 0x34, 0xD5, 0x35, 0x00, 0x36, 0x30, 0x37, 0x00, 0x3C, 0x21,
+
+// 48kHz audio setting.
+      static constexpr const uint8_t data_1[] = { 0xff, 0x82, 0xD6, 0x8E, 0xD7, 0x04, 0xff, 0x84, 0x06, 0x08, 0x07, 0x10, 0x09, 0x00, 0x0F, 0x2B, 0x34, 0xD5, 0x35, 0x00, 0x36, 0x18, 0x37, 0x00, 0x3C, 0x21,
                                                   0xff, 0x82, 0xde, 0x00, 0xde, 0xc0, 0xff, 0x81, 0x23, 0x40, 0x24, 0x64, 0x26, 0x55, 0x29, 0x04, 0x4d, 0x00, 0x27, 0x60, 0x28, 0x00, 0x25, 0x01, 0x2c, 0x94, 0x2d, 0x99 };
       this->writeRegisterSet(data_1, sizeof(data_1));
     }
@@ -377,6 +395,39 @@ namespace lgfx
     return false;
   }
 
+  size_t Panel_M5HDMI::HDMI_Trans::readEDID(uint8_t* EDID, size_t len)
+  {
+    static constexpr const uint8_t data[] = { 0xff, 0x85 ,0x03, 0xc9 ,0x04, 0xA0 ,0x06, 0x20 ,0x14, 0x7f };
+    this->writeRegisterSet(data, sizeof(data));
+
+    size_t i_end = std::min<size_t>(16u, len >> 5);
+    size_t result = 0;
+    for ( size_t i = 0; i < i_end; ++i )
+    {
+      static constexpr const uint8_t data2[2][6] = { { 0x07, 0x36 ,0x07, 0x34 ,0x07, 0x37 }, { 0x07, 0x76 ,0x07, 0x74 ,0x07, 0x77 } };
+      this->writeRegister( 0x05, (i & 7) << 5 );
+      this->writeRegisterSet(data2[i >> 3], 6);
+      delay( 5 );
+      if ( 0x02 != ( 0x52 & this->readRegister( 0x40 )))
+      {
+        break;
+      }
+      uint8_t* dst = &EDID[result];
+      result += 32;
+      for ( size_t j = 0; j < 32; ++j )
+      {
+        dst[j] = this->readRegister( 0x83 );
+      }
+      if (i == 3)
+      {
+        i_end = std::min<size_t>(i_end, ((dst[30] & 0x03) + 1) << 2);
+      }
+    }
+    static constexpr const uint8_t data3[] = { 0x03, 0xc2 ,0x07, 0x1f };
+    this->writeRegisterSet(data3, sizeof(data3));
+    return result;
+  }
+
 //----------------------------------------------------------------------------
 
   bool Panel_M5HDMI::init(bool use_reset)
@@ -404,7 +455,7 @@ namespace lgfx
     }
 
     if (!Panel_Device::init(false)) { return false; }
-  
+
     // Initialize and read ID
     ESP_LOGI(TAG, "Waiting the FPGA gets idle...");
     startWrite();
@@ -423,7 +474,7 @@ namespace lgfx
     cs_control(true);
     _bus->endRead();
     cs_control(false);
-  
+
     bool res = _init_resolution();
 
     ESP_LOGI(TAG, "Initialize HDMI transmitter...");
@@ -470,9 +521,9 @@ namespace lgfx
 
     bool res = (hori_total > hori_min);
     if (!res)
-    { // If the blanking period is too small, it will not work properly. 
+    { // If the blanking period is too small, it will not work properly.
       hori_total = hori_min;
-      ESP_LOGE(TAG, "resolution error. out of range  %dx%d %.2f Hz", mem_width, mem_height, _refresh_rate);
+      ESP_LOGE(TAG, "resolution error. out of range  %dx%d %.2f Hz", mem_width, mem_height, (double)_refresh_rate);
     }
 
     video_timing_t vt;
@@ -1290,6 +1341,12 @@ namespace lgfx
     waitDisplay();
     _bus->writeBytes(cmd.raw, sizeof(cmd_t), false, false);
     endWrite();
+  }
+
+  size_t Panel_M5HDMI::readEDID(uint8_t* EDID, size_t len)
+  {
+    HDMI_Trans driver(_HDMI_Trans_config);
+    return driver.readEDID(EDID, len);
   }
 
 //----------------------------------------------------------------------------

@@ -1,11 +1,12 @@
 #include "data_common.h"
 #include "debug_tools_conf.h"
 #include "memory_model/memory_model.h"
+#include "pins_definitions.h"
 #include "wireless_conf.h"
 #include "wireless_main.h"
 
 //
-#include "sdkconfig.h"
+#include <sdkconfig.h>
 //
 #include <driver/gpio.h>
 #include <driver/uart.h>
@@ -15,13 +16,14 @@
 #include <nvs.h>
 #include <nvs_flash.h>
 //
-#include "aes/esp_aes.h"
-#include "esp_private/periph_ctrl.h"
-#include "hal/aes_hal.h"
-#include "hal/aes_ll.h"
-#include "soc/dport_access.h"
-#include "soc/hwcrypto_periph.h"
-#include "soc/periph_defs.h"
+#include <aes/esp_aes.h>
+#include <esp_private/periph_ctrl.h>
+#include <hal/aes_hal.h>
+#include <hal/aes_ll.h>
+#include <soc/dport_access.h>
+#include <soc/hwcrypto_periph.h>
+#include <soc/hwcrypto_reg.h>
+#include <soc/periph_defs.h>
 //
 #include <assert.h>
 #include <stdint.h>
@@ -30,10 +32,6 @@
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
 
-/// Single Pin is used for the communication
-/// @attention In normal operation mode this pin MUST be connected to the GND
-#define UART_SYNC_RX_TX_PIN (GPIO_NUM_19)
-
 /// Used UART for the communication
 #define UART_SYNC_NUM (UART_NUM_2)
 
@@ -41,7 +39,7 @@
 #define UART_SYNC_BAUD_SPEED (9600)
 
 
-#if(CONFIG_IDF_TARGET_ESP32)
+#if(CONFIG_IDF_TARGET_ESP32 && !CONFIG_IDF_TARGET_ESP32S3)
 // To be consistant with ESP32-S3
 #define AES_TEXT_IN_BASE  AES_TEXT_BASE
 #define AES_TEXT_OUT_BASE AES_TEXT_BASE
@@ -70,7 +68,6 @@ const uart_config_t uart_config = {.baud_rate = UART_SYNC_BAUD_SPEED,
                                    .source_clk = UART_SCLK_DEFAULT};
 
 
-
 static uint8_t ucCryptLastMode = 0xFF;
 
 esp_aes_context magic_key_storage = {0};
@@ -93,7 +90,7 @@ static inline void wifi_aes_crypt_ll(uint32_t* pulDataIn, uint32_t* pulDataOut);
  * @brief Sync Transmitter & Receiver with a bunch of Keys and exchange MAC addresses.
  * 
  * @note Everything is done over UART and single pin.
- */ 
+ */
 void wifi_enryption_pair_keys(void);
 
 // ----------------------------------------------------------------------
@@ -144,19 +141,19 @@ wifi_enryption_pair_keys(void)
 	ESP_ERROR_CHECK(uart_driver_install(UART_SYNC_NUM, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
 	ESP_ERROR_CHECK(uart_set_mode(UART_SYNC_NUM, UART_MODE_UART));
 
-  // Generate random numbers for at least 100 times
-  uint32_t ulEntropyEnrols = 100 + (esp_random() & 0xff);
+	// Generate random numbers for at least 100 times
+	uint32_t ulEntropyEnrols = 100 + (esp_random() & 0xff);
 
 	for(size_t i = 0; i < ulEntropyEnrols; i++)
 	{
 		esp_fill_random((void*)&xSync, sizeof(pairing_data_t));
-    vTaskDelay(pdMS_TO_TICKS(1));
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 
 	// Fill self MAC. It will be used by the Transmitter
 	vWirelessGetOwnMAC(&xSync.ucOtherNodeMac[0]);
 
-  // Send data to the Transmitter
+	// Send data to the Transmitter
 	uart_write_bytes(UART_SYNC_NUM, (const char*)&xSync, sizeof(pairing_data_t));
 	ESP_ERROR_CHECK(uart_wait_tx_done(UART_SYNC_NUM, pdMS_TO_TICKS(200)));
 
@@ -198,18 +195,27 @@ vWirelessUpdateNvsSecretKeys(BaseType_t xForcedSave)
 	ESP_ERROR_CHECK(nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &nvs_keys_handle));
 	ESP_ERROR_CHECK(nvs_get_blob(nvs_keys_handle, ENCRYPTION_KEYS_NVS_NAME, NULL, &required_size));
 
-	// Keys have been found?
-	if(required_size > 0)
-	{
-		ESP_ERROR_CHECK(nvs_get_blob(nvs_keys_handle, ENCRYPTION_KEYS_NVS_NAME, &xSecretSync, &required_size));
-	}
-
 	if(xForcedSave || (required_size != sizeof(pairing_data_t)))
 	{
+	SAVE_ENCRYPTION_KEYS_NVS:
+
 		ESP_ERROR_CHECK(nvs_set_blob(nvs_keys_handle, ENCRYPTION_KEYS_NVS_NAME, &xSecretSync, required_size));
+		ESP_ERROR_CHECK(nvs_commit(nvs_keys_handle));
+	}
+	else
+	{
+		// Keys have been found?
+		if(required_size > 0)
+		{
+			ESP_ERROR_CHECK(nvs_get_blob(nvs_keys_handle, ENCRYPTION_KEYS_NVS_NAME, &xSecretSync, &required_size));
+		}
+		else
+		{
+			// No keys, so save them
+			goto SAVE_ENCRYPTION_KEYS_NVS;
+		}
 	}
 
-	ESP_ERROR_CHECK(nvs_commit(nvs_keys_handle));
 	nvs_close(nvs_keys_handle);
 }
 
@@ -224,9 +230,7 @@ wifi_crypt_packet(const uint8_t* pucDataIn, uint8_t* pucDataOut, size_t xInputSi
 	// TODO: BD-0003 add lock for multithread access for wifi_crypt_packet
 	// TODO: BD-0004 add whole pucDataIn encryption for wifi_crypt_packet
 
-#ifdef AES_ENCRYPTION_TIME_DBG_PROFILER
-	profile_point(profile_point_start, AES_ENCRYPTION_TIME_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(AES_ENCRYPTION_TIME_DBG_PROFILER, profile_point_start);
 
 	if(ucCryptLastMode != ucMode)
 	{
@@ -234,30 +238,24 @@ wifi_crypt_packet(const uint8_t* pucDataIn, uint8_t* pucDataOut, size_t xInputSi
 		aes_hal_setkey((&magic_key_storage)->key, (&magic_key_storage)->key_bytes, ucMode);
 	}
 
-	// At encryption less memcpy() is used and we use 1-2us less time, but it's a danger game!
+	// At encryption and sometime decryption less memcpy() is used and we use 1-2us less time, but it's a danger game!
 	// Thanks to aligned data with 256 bytes buffers!
-	if(ucMode == ESP_AES_ENCRYPT)
-	{
-		wifi_aes_crypt_ll((uint32_t*)&pucDataIn[0], (uint32_t*)&pucDataOut[0]);
-	}
-	else
-	{
-		memcpy(&pucDataOut[AES_ENCRYPTION_MAX_BYTES],
-		       &pucDataIn[0],
-		       (xInputSize > AES_ENCRYPTION_MAX_BYTES) ? AES_ENCRYPTION_MAX_BYTES : xInputSize);
-		wifi_aes_crypt_ll((uint32_t*)&pucDataOut[AES_ENCRYPTION_MAX_BYTES], (uint32_t*)&pucDataOut[0]);
-	}
-
 	if(xInputSize > AES_ENCRYPTION_MAX_BYTES)
 	{
+		wifi_aes_crypt_ll((uint32_t*)&pucDataIn[0], (uint32_t*)&pucDataOut[0]);
+
 		memcpy(&pucDataOut[AES_ENCRYPTION_MAX_BYTES],
 		       &pucDataIn[AES_ENCRYPTION_MAX_BYTES],
 		       xInputSize - AES_ENCRYPTION_MAX_BYTES);
 	}
+	else
+	{
+		// Since output buffer is always bigger we will use it as temp storage
+		memcpy(&pucDataOut[AES_ENCRYPTION_MAX_BYTES], &pucDataIn[0], xInputSize);
+		wifi_aes_crypt_ll((uint32_t*)&pucDataOut[AES_ENCRYPTION_MAX_BYTES], (uint32_t*)&pucDataOut[0]);
+	}
 
-#ifdef AES_ENCRYPTION_TIME_DBG_PROFILER
-	profile_point(profile_point_end, AES_ENCRYPTION_TIME_DBG_PROFILER_POINT_ID);
-#endif
+	PROFILE_POINT(AES_ENCRYPTION_TIME_DBG_PROFILER, profile_point_end);
 }
 
 
@@ -290,10 +288,10 @@ init_encryption(void)
 		vWirelessUpdateNvsSecretKeys(pdFALSE);
 	}
 
-  vWirelessSetNodeKeys(&xSecretSync);
+	vWirelessSetNodeKeys(&xSecretSync);
 
-  // It will be not used anymore
-  ESP_ERROR_CHECK(gpio_reset_pin(UART_SYNC_RX_TX_PIN));
+	// It will be not used anymore
+	ESP_ERROR_CHECK(gpio_reset_pin(UART_SYNC_RX_TX_PIN));
 
 	// Enable AES hardware encryption
 	esp_aes_init(&magic_key_storage);
