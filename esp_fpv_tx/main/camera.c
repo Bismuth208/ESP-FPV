@@ -63,7 +63,7 @@ StaticSemaphore_t xFrameStartCounterControlBlock;
 static uint16_t usDataOffsetExtra = 0;
 
 static uint8_t ucImageData[IMG_JPG_FILE_MAX_SIZE];
-static uint16_t ucImageDataSize = 0;
+static uint16_t usImageDataSize = 0;
 
 static BaseType_t xFirstFrameHeaderSync = pdTRUE;
 
@@ -206,14 +206,17 @@ send_jpg_header(uint8_t* pucImageData)
 static void IRAM_ATTR
 camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 {
+	PROFILE_POINT(JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_start);
+
 	if(data != NULL)
 	{
 		const uint32_t* src = (const uint32_t*)data;
-		uint32_t* pulDest = (uint32_t*)&ucImageData[ucImageDataSize];
-		ucImageDataSize += count;
+		uint32_t* pulDest = (uint32_t*)&ucImageData[usImageDataSize];
+		usImageDataSize += count;
 
-		PROFILE_POINT(JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_start);
-
+		// Source buffer contain one byte of data in every word
+		// This is why i cannot use memcpy() here
+		// Turns out this is fastest way to copy data
 		do
 		{
 			pulDest[0] = src[0] | (src[1] << 8) | (src[2] << 16) | (src[3] << 24);
@@ -233,7 +236,9 @@ camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 				*pucDest++ = (uint8_t)*src++;
 			} while(--count);
 		}
-
+	}
+	else
+	{
 		if(last_dma_transfer)
 		{
 			if(xTakeFrame == pdTRUE)
@@ -246,29 +251,30 @@ camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 					send_jpg_header(&ucImageData[0]);
 				}
 
-				ucImageDataSize -= (usDataOffsetExtra);
+				usImageDataSize -= (usDataOffsetExtra);
 
 				PROFILE_POINT(JPG_EOI_SEARCH_TIME_DBG_PROFILER, profile_point_start);
 
 				// Start from the second half of the image what potentially contain garbage
-				uint8_t* pucGarbage = (uint8_t*)&ucImageData[usDataOffsetExtra + (ucImageDataSize / 2)];
+				uint8_t* pucGarbage = (uint8_t*)&ucImageData[usDataOffsetExtra + (usImageDataSize / 2)];
 
-				// With blank Frame (covered with lid on lens) it takes ~29±2us to find EOI
+				// With a blank image (covered lid on lens) it takes ~16±2us to find EOI (240x240)
+				// On complex image with bunch of details it takes ~70±8us to find EOI (240x240)
 				while(*(uint16_t*)pucGarbage++ != 0xD9FF)
 					;
-				ucImageDataSize = pucGarbage - (uint8_t*)&ucImageData[usDataOffsetExtra];
+				usImageDataSize = pucGarbage - (uint8_t*)&ucImageData[usDataOffsetExtra];
 
 				PROFILE_POINT(JPG_EOI_SEARCH_TIME_DBG_PROFILER, profile_point_end);
 
 				// Copy data to Tx queue
-				vWirelessSendArray(PACKET_TYPE_FRAME_DATA, &ucImageData[usDataOffsetExtra], ucImageDataSize, pdFALSE);
+				vWirelessSendArray(PACKET_TYPE_FRAME_DATA, &ucImageData[usDataOffsetExtra], usImageDataSize, pdTRUE);
 			}
 
-			ucImageDataSize = 0;
+			usImageDataSize = 0;
 		}
-
-		PROFILE_POINT(JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_end);
 	}
+
+	PROFILE_POINT(JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_end);
 }
 
 static uint32_t

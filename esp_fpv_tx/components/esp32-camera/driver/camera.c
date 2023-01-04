@@ -691,7 +691,7 @@ dma_finish_frame()
 		if(s_state->fb->len)
 		{
 			// send out the frame
-			// s_cb(NULL, 0, true);
+			s_cb(NULL, 0, true);
 			camera_fb_done();
 		}
 	}

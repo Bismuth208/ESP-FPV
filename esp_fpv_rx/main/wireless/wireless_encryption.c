@@ -238,25 +238,21 @@ wifi_crypt_packet(const uint8_t* pucDataIn, uint8_t* pucDataOut, size_t xInputSi
 		aes_hal_setkey((&magic_key_storage)->key, (&magic_key_storage)->key_bytes, ucMode);
 	}
 
-	// At encryption less memcpy() is used and we use 1-2us less time, but it's a danger game!
+	// At encryption and sometime decryption less memcpy() is used and we use 1-2us less time, but it's a danger game!
 	// Thanks to aligned data with 256 bytes buffers!
-	if(ucMode == ESP_AES_ENCRYPT)
-	{
-		wifi_aes_crypt_ll((uint32_t*)&pucDataIn[0], (uint32_t*)&pucDataOut[0]);
-	}
-	else
-	{
-		memcpy(&pucDataOut[AES_ENCRYPTION_MAX_BYTES],
-		       &pucDataIn[0],
-		       (xInputSize > AES_ENCRYPTION_MAX_BYTES) ? AES_ENCRYPTION_MAX_BYTES : xInputSize);
-		wifi_aes_crypt_ll((uint32_t*)&pucDataOut[AES_ENCRYPTION_MAX_BYTES], (uint32_t*)&pucDataOut[0]);
-	}
-
 	if(xInputSize > AES_ENCRYPTION_MAX_BYTES)
 	{
+		wifi_aes_crypt_ll((uint32_t*)&pucDataIn[0], (uint32_t*)&pucDataOut[0]);
+
 		memcpy(&pucDataOut[AES_ENCRYPTION_MAX_BYTES],
 		       &pucDataIn[AES_ENCRYPTION_MAX_BYTES],
 		       xInputSize - AES_ENCRYPTION_MAX_BYTES);
+	}
+	else
+	{
+		// Since output buffer is always bigger we will use it as temp storage
+		memcpy(&pucDataOut[AES_ENCRYPTION_MAX_BYTES], &pucDataIn[0], xInputSize);
+		wifi_aes_crypt_ll((uint32_t*)&pucDataOut[AES_ENCRYPTION_MAX_BYTES], (uint32_t*)&pucDataOut[0]);
 	}
 
 	PROFILE_POINT(AES_ENCRYPTION_TIME_DBG_PROFILER, profile_point_end);
