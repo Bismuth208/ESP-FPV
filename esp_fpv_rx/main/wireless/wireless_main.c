@@ -155,7 +155,7 @@ PacketFrame_t xPacket;
 // Static functions declaration
 
 #if WIFI_RX_DATA_CB_DBG_PRINTOUT
-static void wifi_espnow_dump_playload(uint8_t* pucPayloadBuff);
+static void wifi_espnow_dump_playload(const char* text, uint8_t* pucPayloadBuff, size_t size, uint32_t id);
 
 static void wifi_espnow_dump_mac(const uint8_t* mac_addr);
 #endif // WIFI_RX_DATA_CB_DBG_PRINTOUT

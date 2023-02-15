@@ -8,7 +8,10 @@
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
 
-// Create bit mask, which will be used as "pass" range and filter overflow
+/// Maximum amount of bytes in formatted string to output via UART 
+#define ASYNC_PRINTF_MAX_OUTPUT_BUF_LEN (2048)
+
+/// Create bit mask, which will be used as "pass" range and filter overflow
 #define ASYNC_PRINTF_BUFFER_MASK (ASYNC_PRINTF_MAX_ITEMS - 1)
 
 typedef struct
@@ -22,6 +25,8 @@ typedef struct
 // Variables
 
 static volatile async_printf_ring_buffer_t async_printf_buffer = {0};
+
+uint8_t async_printf_fmt_buf[ASYNC_PRINTF_MAX_OUTPUT_BUF_LEN] = {0};
 
 // ----------------------------------------------------------------------
 // Static functions declaration
@@ -43,12 +48,14 @@ async_printf_print(void)
 	switch(local_tail->type)
 	{
 	case async_print_type_str: {
-		printf((const char*)local_tail->msg);
+		snprintf((char*)&async_printf_fmt_buf, ASYNC_PRINTF_MAX_OUTPUT_BUF_LEN, (const char*)local_tail->msg);
+		puts((const char*)&async_printf_fmt_buf);
 		break;
 	}
 
 	case async_print_type_u32: {
-		printf((const char*)local_tail->msg, (uint32_t)local_tail->value);
+		snprintf((char*)&async_printf_fmt_buf, ASYNC_PRINTF_MAX_OUTPUT_BUF_LEN, (const char*)local_tail->msg, (uint32_t)local_tail->value);
+		puts((const char*)&async_printf_fmt_buf);
 		break;
 	}
 

@@ -63,11 +63,27 @@ extern "C" {
 //
 #define SELF_MAC_TELL_DBG_PRINTOUT (0)
 
-// This parameter requirer to enable
-// at "Component config -> FreeRTOS -> Kernel ->":
-//  - configUSE_TRACE_FACILITY
-//  - Enable display of xCoreId in vTaskList
-//  - configGENERATE_RUN_TIME_STATS
+/**
+ * This parameter requirer to enable
+ * at "Component config -> FreeRTOS -> Kernel ->":
+ * - configUSE_TRACE_FACILITY
+ * - Enable display of xCoreId in vTaskList
+ * - configGENERATE_RUN_TIME_STATS
+ * 
+ * Output example:
+ *        Task name    Runtime       CPU   Core  Prior.
+ *        Tmr Svc         56      <1 %      0       1 
+ *    task_printf       1448      <1 %      0       1 
+ *           IDLE    1524369      96 %      1       0 
+ *           IDLE    1135987      72 %      0       0 
+ *           ipc1      44731       2 %      1      24 
+ *     dma_filter         15      <1 %      1      10 
+ *           ipc0      14188      <1 %      0       1 
+ *     CameraTask         40      <1 %      1       1 
+ *        data_tx         38      <1 %      0       1 
+ *           wifi     149289       9 %      0      23 
+ *      esp_timer          9      <1 %      0      22 
+ */
 // #define SYS_STATS_DBG_PRINTOUT
 
 // ---------------------------------

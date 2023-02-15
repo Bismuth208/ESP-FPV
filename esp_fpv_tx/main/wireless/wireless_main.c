@@ -131,7 +131,7 @@ uint8_t ucEncryptedData[2][256];
 // Static functions declaration
 
 #if WIFI_RX_DATA_CB_DBG_PRINTOUT
-static void wifi_espnow_dump_playload(uint8_t* pucPayloadBuff);
+static void wifi_espnow_dump_playload(const char* text, uint8_t* pucPayloadBuff, size_t size, uint32_t id);
 
 static void wifi_espnow_dump_mac(const uint8_t* mac_addr);
 #endif // WIFI_RX_DATA_CB_DBG_PRINTOUT
@@ -209,19 +209,18 @@ static void vDataTransmitterTask(void* pvArg);
 
 #if WIFI_RX_DATA_CB_DBG_PRINTOUT
 static void
-wifi_espnow_dump_playload(uint8_t* pucPayloadBuff)
+wifi_espnow_dump_playload(const char* text, uint8_t* pucPayloadBuff, size_t size, uint32_t id)
 {
-
-	static char cBuff[256];
+	static char cBuff[2][1024];
 	size_t offset = 0;
 
-	for(size_t i = 0; i < 32; i++)
+	for(size_t i = 0; i < size; i++)
 	{
-		offset += sprintf(&cBuff[offset], "%02X ", pucPayloadBuff[i]);
+		offset += sprintf(&cBuff[id][offset], "%02X ", pucPayloadBuff[i]);
 	}
 
-	ASYNC_PRINTF(1, async_print_type_str, "cBuff:\n", 0);
-	ASYNC_PRINTF(1, async_print_type_str, cBuff, 0);
+	ASYNC_PRINTF(1, async_print_type_str, text, 0);
+	ASYNC_PRINTF(1, async_print_type_str, &cBuff[id][0], 0);
 	ASYNC_PRINTF(1, async_print_type_str, "\n\n", 0);
 }
 
@@ -384,7 +383,7 @@ wifi_raw_packet_rx_cb(void* buf, wifi_promiscuous_pkt_type_t type)
 	const wifi_espnow_packet_t* px_espnow_packet = (wifi_espnow_packet_t*)px_promiscuous_pkt->payload;
 
 #if 0
-	wifi_espnow_dump_playload((uint8_t*)px_promiscuous_pkt->payload);
+	wifi_espnow_dump_playload("px_promiscuous_pkt:\n", (uint8_t*)px_promiscuous_pkt->payload, 32, 0);
 #endif
 
 	if((px_espnow_packet->category_code == 0x7f) && (px_espnow_packet->content.element_id == WIFI_VENDOR_IE_ELEMENT_ID))

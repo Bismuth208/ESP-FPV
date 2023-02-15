@@ -53,12 +53,31 @@
 
 //
 #define WIRELESS_TELL_SCAN_PROGRESS (0)
-
-// This parameter requirer to enable
-// at "Component config -> FreeRTOS -> Kernel ->":
-//  - configUSE_TRACE_FACILITY
-//  - Enable display of xCoreId in vTaskList
-//  - configGENERATE_RUN_TIME_STATS
+ 
+/**
+ * This parameter requirer to enable
+ * at "Component config -> FreeRTOS -> Kernel ->":
+ * - configUSE_TRACE_FACILITY
+ * - Enable display of xCoreId in vTaskList
+ * - configGENERATE_RUN_TIME_STATS
+ * 
+ * Output example:
+ *      Task name    Runtime       CPU   Core  Prior.
+ * img_chunk_draw    4604206      23 %      1       1 
+ *        Tmr Svc      16530      <1 %      0       1 
+ *    task_printf     347239       1 %      0       1 
+ *           IDLE   14641658      73 %      1       0 
+ *           IDLE    2997849      15 %      0       0 
+ *   memory_model       2212      <1 %      0       1 
+ *           ipc1     356404       1 %      1      24 
+ *           ipc0     341636       1 %      0      24 
+ *   img_osd_draw     231030       1 %      1       1 
+ *        data_tx      64848      <1 %      1       2 
+ *           wifi     641799       3 %      0      23 
+ *    img_decoder   15331723      77 %      0       2 
+ *      esp_timer          7      <1 %      0      22 
+ *        sys_evt         37      <1 %      0      20
+ */
 // #define SYS_STATS_DBG_PRINTOUT
 
 

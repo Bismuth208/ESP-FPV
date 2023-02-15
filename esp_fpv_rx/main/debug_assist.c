@@ -67,7 +67,7 @@ static void vPrintfTask(void* pvArg);
 #ifdef SYS_STATS_DBG_PRINTOUT
 static void vTaskStatsAlloc(void);
 
-static void vGetSysStats(char* pcWriteBuffer);
+static void vGetSysStats(char* pcWriteBuffer, size_t xMaxWriteBufferLen);
 
 static void debug_sys_stats_plotter_timer(void);
 #endif
@@ -85,10 +85,11 @@ vTaskStatsAlloc(void)
 }
 
 static void
-vGetSysStats(char* pcWriteBuffer)
+vGetSysStats(char* pcWriteBuffer, size_t xMaxWriteBufferLen)
 {
 	volatile UBaseType_t uxArraySize = 0, x;
 	unsigned long ulTotalRunTime, ulStatsAsPercentage;
+	int iStat = -1;
 
 	// Make sure the write buffer does not contain a string.
 	*pcWriteBuffer = 0x00;
@@ -101,8 +102,19 @@ vGetSysStats(char* pcWriteBuffer)
 
 		if(ulTotalRunTime > 0)
 		{
-			sprintf(pcWriteBuffer, "\n%16s %10s %9s %6s %7s\n", "Task name", "Runtime", "CPU", "Core", "Prior.");
-			pcWriteBuffer += strlen((char*)pcWriteBuffer);
+			iStat = snprintf(pcWriteBuffer,
+			                 xMaxWriteBufferLen,
+			                 "\n%16s %10s %9s %6s %7s\n",
+			                 "Task name",
+			                 "Runtime",
+			                 "CPU",
+			                 "Core",
+			                 "Prior.");
+			if((iStat >= 0) && (iStat < xMaxWriteBufferLen))
+			{
+				pcWriteBuffer += strnlen((char*)pcWriteBuffer, xMaxWriteBufferLen);
+			}
+
 
 			for(x = 0; x < uxArraySize; x++)
 			{
@@ -110,27 +122,36 @@ vGetSysStats(char* pcWriteBuffer)
 
 				if(ulStatsAsPercentage > 0UL)
 				{
-					sprintf(pcWriteBuffer,
-					        "%16s %10u %7u %s  %5d %7d \n",
-					        pxTaskStatusArray[x].pcTaskName,
-					        pxTaskStatusArray[x].ulRunTimeCounter,
-					        ulStatsAsPercentage,
-					        "%%",
-					        pxTaskStatusArray[x].xCoreID,
-					        pxTaskStatusArray[x].uxBasePriority);
+					iStat = snprintf(pcWriteBuffer,
+					                 xMaxWriteBufferLen,
+					                 "%16s %10u %7u %s  %5d %7d \n",
+					                 pxTaskStatusArray[x].pcTaskName,
+					                 pxTaskStatusArray[x].ulRunTimeCounter,
+					                 ulStatsAsPercentage,
+					                 "%%",
+					                 pxTaskStatusArray[x].xCoreID,
+					                 pxTaskStatusArray[x].uxBasePriority);
 				}
 				else
 				{
-					sprintf(pcWriteBuffer,
-					        "%16s %10u %10s  %5d %7d \n",
-					        pxTaskStatusArray[x].pcTaskName,
-					        pxTaskStatusArray[x].ulRunTimeCounter,
-					        "<1 %%",
-					        pxTaskStatusArray[x].xCoreID,
-					        pxTaskStatusArray[x].uxBasePriority);
+					iStat = snprintf(pcWriteBuffer,
+					                 xMaxWriteBufferLen,
+					                 "%16s %10u %10s  %5d %7d \n",
+					                 pxTaskStatusArray[x].pcTaskName,
+					                 pxTaskStatusArray[x].ulRunTimeCounter,
+					                 "<1 %%",
+					                 pxTaskStatusArray[x].xCoreID,
+					                 pxTaskStatusArray[x].uxBasePriority);
 				}
 
-				pcWriteBuffer += strlen((char*)pcWriteBuffer);
+				if((iStat >= 0) && (iStat < xMaxWriteBufferLen))
+				{
+					pcWriteBuffer += strnlen((char*)pcWriteBuffer, xMaxWriteBufferLen);
+				}
+				else
+				{
+					break;
+				}
 			}
 		}
 	}
@@ -139,7 +160,7 @@ vGetSysStats(char* pcWriteBuffer)
 static void
 debug_sys_stats_plotter_timer(void)
 {
-	vGetSysStats((char*)&ucWriteBuffer[0]);
+	vGetSysStats((char*)&ucWriteBuffer[0], sizeof(ucWriteBuffer));
 	ASYNC_PRINTF(1, async_print_type_str, (const char*)&ucWriteBuffer[0], 0);
 }
 #endif // SYS_STATS_DBG_PRINTOUT
