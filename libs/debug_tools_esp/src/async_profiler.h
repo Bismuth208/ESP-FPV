@@ -15,10 +15,8 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
-/// Maximum amount of available independent points to use
-#define PROFILER_POINTS_MAX (32u)
 
-#ifdef ENABLE_DEBUG_TOOLS
+#if (CONFIG_ENABLE_DEBUG_TOOLS == 1)
 #define PROFILE_POINT(name, type)                                              \
   if (name == 1) {                                                             \
     profile_point(type, name##_POINT_ID);                                      \

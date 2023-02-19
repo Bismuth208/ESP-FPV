@@ -19,10 +19,11 @@
  *  - Most of the World [1 : 13]
  */
 
-#include "debug_tools_conf.h"
 #include "memory_model/memory_model.h"
 #include "wireless_conf.h"
 #include "wireless_main.h"
+
+#include <debug_tools_esp.h>
 //
 #include <sdkconfig.h>
 //
@@ -88,7 +89,7 @@ vScanAirForBestChannel(void)
 	size_t ucBestChannel = 0;
 	int16_t isBestRssi = AIR_BEST_RSSI_NOSE;
 
-#if WIRELESS_TELL_SCAN_PROGRESS
+#if(CONFIG_WIRELESS_TELL_SCAN_PROGRESS == 1)
 	uint16_t usApNumMax = 0xFFFF;
 #endif
 
@@ -115,7 +116,7 @@ vScanAirForBestChannel(void)
 	                                  .scan_type = WIFI_SCAN_TYPE_ACTIVE,
 	                                  .scan_time = {.active = {.min = 1200, .max = 1500}, .passive = 1500}};
 
-	ASYNC_PRINTF(WIRELESS_TELL_SCAN_PROGRESS,
+	ASYNC_PRINTF(CONFIG_WIRELESS_TELL_SCAN_PROGRESS,
 	             async_print_type_u32,
 	             "Total channels: %u\n",
 	             (uint32_t)xWirelessCountrySettings.nchan);
@@ -129,8 +130,10 @@ vScanAirForBestChannel(void)
 
 		vMemoryModelSet(MEMORY_MODEL_WIFI_SCAN_CHANNEL, xScanConfig.channel);
 
-		ASYNC_PRINTF(
-		    WIRELESS_TELL_SCAN_PROGRESS, async_print_type_u32, "Current channel: %u\n", (uint32_t)xScanConfig.channel);
+		ASYNC_PRINTF(CONFIG_WIRELESS_TELL_SCAN_PROGRESS,
+		             async_print_type_u32,
+		             "Current channel: %u\n",
+		             (uint32_t)xScanConfig.channel);
 
 		// STEP: 1.1
 		// Get all data from current channel
@@ -151,7 +154,7 @@ vScanAirForBestChannel(void)
 		xChannelsStats[i].usApNum = usApNum;
 		xChannelsStats[i].xChannelId = xScanConfig.channel;
 
-#if WIRELESS_TELL_SCAN_PROGRESS
+#if(CONFIG_WIRELESS_TELL_SCAN_PROGRESS == 1)
 		ASYNC_PRINTF(1, async_print_type_u32, "Channel APs: %u\n", (uint32_t)xChannelsStats[i].usApNum);
 		ASYNC_PRINTF(1, async_print_type_u32, "Channel Noise: %d\n\n", (uint32_t)xChannelsStats[i].isRssi);
 #endif
@@ -190,7 +193,7 @@ vScanAirForBestChannel(void)
 		// Meanwhile select most quiet channel based on Weight
 		if(xChannelsStats[i].isChannelWeight <= isBestRssi)
 		{
-#if WIRELESS_TELL_SCAN_PROGRESS
+#if(CONFIG_WIRELESS_TELL_SCAN_PROGRESS == 1)
 			usApNumMax = xChannelsStats[i].usApNum;
 #endif
 			ucBestChannel = xChannelsStats[i].xChannelId;
@@ -198,7 +201,7 @@ vScanAirForBestChannel(void)
 		}
 	}
 
-#if WIRELESS_TELL_SCAN_PROGRESS
+#if(CONFIG_WIRELESS_TELL_SCAN_PROGRESS == 1)
 	ASYNC_PRINTF(1, async_print_type_u32, "Best channel: %u\n", (uint32_t)ucBestChannel);
 	ASYNC_PRINTF(1, async_print_type_u32, "Channel APs: %u\n", (uint32_t)usApNumMax);
 	ASYNC_PRINTF(1, async_print_type_u32, "Channel avg. Noise: %d\n", (uint32_t)isBestRssi);

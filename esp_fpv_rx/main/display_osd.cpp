@@ -1,21 +1,22 @@
 #include "display_osd.h"
 
 #include "data_common.h"
-#include "debug_tools_conf.h"
 #include "image_decoder.h"
 #include "memory_model/memory_model.h"
 #include "pins_definitions.h"
 #include "wireless/wireless_main.h"
+
+//
+#include <sdkconfig.h>
 //
 #define LGFX_ESP_WROVER_KIT
 #define LGFX_USE_V1
 #include "../../libs/LovyanGFX/src/LovyanGFX.hpp"
 // #include "lgfx_ili9341_s3.hpp"
-#include "lgfx_st7789v2_s3.hpp"
 #include "lgfx_ssd1306_s3.hpp"
+#include "lgfx_st7789v2_s3.hpp"
 
-//
-#include <sdkconfig.h>
+#include <debug_tools_esp.h>
 //
 #include <freertos/FreeRTOS.h>
 #include <freertos/FreeRTOSConfig.h>
@@ -232,7 +233,7 @@ ulOsdSyncDraw(TickType_t xTicksToSync)
 static void IRAM_ATTR
 draw_osd_screen(void)
 {
-	PROFILE_POINT(OSD_DRAW_TIME_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_OSD_DRAW_TIME_DBG_PROFILER, profile_point_start);
 
 	if(sRedrawRSSi)
 	{
@@ -284,13 +285,13 @@ draw_osd_screen(void)
 	sprintf(&gui_text_buf[0], "%03u", ulAvgFrameTime);
 	tft_oled.drawString(&gui_text_buf[0], TEXT_POS_X_FOR_FRAME_TIME, TEXT_POS_Y_FOR_FRAME_TIME);
 
-	PROFILE_POINT(OSD_DRAW_TIME_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_OSD_DRAW_TIME_DBG_PROFILER, profile_point_end);
 }
 
 static void IRAM_ATTR
 draw_img_chunk(JpgMagicChunk_t* pxJpgMagicChunk)
 {
-	PROFILE_POINT(IMG_CHUNK_DRAW_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_IMG_CHUNK_DRAW_DBG_PROFILER, profile_point_start);
 
 	// tft.startWrite();
 
@@ -306,7 +307,7 @@ draw_img_chunk(JpgMagicChunk_t* pxJpgMagicChunk)
 
 	// tft.endWrite();
 
-	PROFILE_POINT(IMG_CHUNK_DRAW_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_IMG_CHUNK_DRAW_DBG_PROFILER, profile_point_end);
 }
 
 static void
@@ -412,7 +413,7 @@ vOsdUpdaterTimer(TimerHandle_t xTimer)
 	// Tell main GUI thread to update OSD
 	vOsdStartDraw();
 
-	ASYNC_PRINTF(OSD_UPDATE_TIME_DBG_PRINTOUT, async_print_type_u32, assigned_name_for_task_img_osd_draw, 0);
+	ASYNC_PRINTF(CONFIG_OSD_UPDATE_TIME_DBG_PRINTOUT, async_print_type_u32, assigned_name_for_task_img_osd_draw, 0);
 }
 
 static void
@@ -422,7 +423,8 @@ vImgChunkDrawTask(void* pvArg)
 
 	task_sync_get_bits(TASK_SYNC_EVENT_BIT_IMG_CHUNK_DRAW);
 
-	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_img_chunk_draw, 0);
+	ASYNC_PRINTF(
+	    CONFIG_ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_img_chunk_draw, 0);
 
 	for(;;)
 	{

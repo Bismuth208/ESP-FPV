@@ -2,14 +2,21 @@
 
 #include "async_printf.h"
 
+//
+#include <sdkconfig.h>
+//
+#include <assert.h>
+//
 #include <esp_attr.h>
 #include <esp_timer.h>
 
-static volatile uint32_t local_profile_time[PROFILER_POINTS_MAX] = {0};
+static volatile uint32_t local_profile_time[CONFIG_PROFILER_POINTS_MAX] = {0};
 
 void IRAM_ATTR
 profile_point(profile_point_t state, uint32_t point_id)
 {
+	assert(point_id < CONFIG_PROFILER_POINTS_MAX);
+
 	if(state == profile_point_start)
 	{
 		local_profile_time[point_id] = esp_timer_get_time();

@@ -2,11 +2,12 @@
 
 #include "camera.h"
 #include "data_common.h"
-#include "debug_tools_conf.h"
 #include "wireless_conf.h"
 
 //
 #include <sdkconfig.h>
+//
+#include <debug_tools_esp.h>
 //
 #include <freertos/FreeRTOS.h>
 #include <freertos/FreeRTOSConfig.h>
@@ -130,11 +131,11 @@ uint8_t ucEncryptedData[2][256];
 // ----------------------------------------------------------------------
 // Static functions declaration
 
-#if WIFI_RX_DATA_CB_DBG_PRINTOUT
-static void wifi_espnow_dump_playload(uint8_t* pucPayloadBuff);
+#if (CONFIG_WIFI_RX_DATA_CB_DBG_PRINTOUT == 1)
+static void wifi_espnow_dump_playload(const char* text, uint8_t* pucPayloadBuff, size_t size, uint32_t id);
 
 static void wifi_espnow_dump_mac(const uint8_t* mac_addr);
-#endif // WIFI_RX_DATA_CB_DBG_PRINTOUT
+#endif // CONFIG_WIFI_RX_DATA_CB_DBG_PRINTOUT
 
 
 static void wifi_set_tx_power(int8_t ic_new_tx_power);
@@ -207,21 +208,20 @@ static void vDataTransmitterTask(void* pvArg);
 // ----------------------------------------------------------------------
 // Static functions
 
-#if WIFI_RX_DATA_CB_DBG_PRINTOUT
+#if (CONFIG_WIFI_RX_DATA_CB_DBG_PRINTOUT == 1)
 static void
-wifi_espnow_dump_playload(uint8_t* pucPayloadBuff)
+wifi_espnow_dump_playload(const char* text, uint8_t* pucPayloadBuff, size_t size, uint32_t id)
 {
-
-	static char cBuff[256];
+	static char cBuff[2][1024];
 	size_t offset = 0;
 
-	for(size_t i = 0; i < 32; i++)
+	for(size_t i = 0; i < size; i++)
 	{
-		offset += sprintf(&cBuff[offset], "%02X ", pucPayloadBuff[i]);
+		offset += sprintf(&cBuff[id][offset], "%02X ", pucPayloadBuff[i]);
 	}
 
-	ASYNC_PRINTF(1, async_print_type_str, "cBuff:\n", 0);
-	ASYNC_PRINTF(1, async_print_type_str, cBuff, 0);
+	ASYNC_PRINTF(1, async_print_type_str, text, 0);
+	ASYNC_PRINTF(1, async_print_type_str, &cBuff[id][0], 0);
 	ASYNC_PRINTF(1, async_print_type_str, "\n\n", 0);
 }
 
@@ -242,7 +242,7 @@ wifi_espnow_dump_mac(const uint8_t* mac_addr)
 	ASYNC_PRINTF(1, async_print_type_str, "Last Packet Recv from: ", 0);
 	ASYNC_PRINTF(1, async_print_type_str, macStr, 0);
 }
-#endif // WIFI_RX_DATA_CB_DBG_PRINTOUT
+#endif // CONFIG_WIFI_RX_DATA_CB_DBG_PRINTOUT
 
 static void
 wifi_set_tx_power(int8_t ic_new_tx_power)
@@ -263,7 +263,7 @@ wifi_set_tx_power(int8_t ic_new_tx_power)
 static esp_err_t IRAM_ATTR
 send_new_packet(const PacketFrame_t* pxPacketFrame)
 {
-	PROFILE_POINT(ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER, profile_point_start);
 
 	const PacketFrame_t* pxPacketFrameToSend = NULL;
 	uint32_t ulTxDataLen = sizeof(PacketHeader_t) + pxPacketFrame->xHeader.ucDataSize;
@@ -296,13 +296,13 @@ send_new_packet(const PacketFrame_t* pxPacketFrame)
 	esp_err_t xRes = esp_now_send(NULL, (const uint8_t*)pxPacketFrameToSend, ulTxDataLen);
 #endif
 
-	PROFILE_POINT(ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER, profile_point_end);
 
 	if(ESP_OK != xRes)
 	{
 		// do something...
 		ASYNC_PRINTF(
-		    ESP_NOW_SEND_PACKET_FAIL_DBG_PRINTOUT, async_print_type_u32, "esp_now_send failed with %u\n", (uint32_t)xRes);
+		    CONFIG_ESP_NOW_SEND_PACKET_FAIL_DBG_PRINTOUT, async_print_type_u32, "esp_now_send failed with %u\n", (uint32_t)xRes);
 	}
 
 	return xRes;
@@ -313,7 +313,7 @@ wifi_espnow_parse_new_data(const uint8_t* data)
 {
 	const PacketFrame_t* pxPacketFrame = (const PacketFrame_t*)data;
 
-	PROFILE_POINT(ESP_NOW_RX_DATA_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_ESP_NOW_RX_DATA_DBG_PROFILER, profile_point_start);
 
 	if((BaseType_t)pxPacketFrame->xHeader.ucEncrypted == pdTRUE)
 	{
@@ -372,19 +372,21 @@ wifi_espnow_parse_new_data(const uint8_t* data)
 		break;
 	}
 	}
+
+	PROFILE_POINT(CONFIG_ESP_NOW_RX_DATA_DBG_PROFILER, profile_point_end);
 }
 
 #if(WIRELESS_USE_RAW_80211_PACKET == 1)
 static void IRAM_ATTR
 wifi_raw_packet_rx_cb(void* buf, wifi_promiscuous_pkt_type_t type)
 {
-	ASYNC_PRINTF(WIFI_RX_PACKET_CB_DBG_PRINTOUT, async_print_type_u32, "wifi_raw_packet_rx_cb %u\n", (uint32_t)type);
+	ASYNC_PRINTF(CONFIG_WIFI_RX_PACKET_CB_DBG_PRINTOUT, async_print_type_u32, "wifi_raw_packet_rx_cb %u\n", (uint32_t)type);
 
 	const wifi_promiscuous_pkt_t* px_promiscuous_pkt = (wifi_promiscuous_pkt_t*)buf;
 	const wifi_espnow_packet_t* px_espnow_packet = (wifi_espnow_packet_t*)px_promiscuous_pkt->payload;
 
 #if 0
-	wifi_espnow_dump_playload((uint8_t*)px_promiscuous_pkt->payload);
+	wifi_espnow_dump_playload("px_promiscuous_pkt:\n", (uint8_t*)px_promiscuous_pkt->payload, 32, 0);
 #endif
 
 	if((px_espnow_packet->category_code == 0x7f) && (px_espnow_packet->content.element_id == WIFI_VENDOR_IE_ELEMENT_ID))
@@ -469,19 +471,19 @@ get_packet_from_queue(void)
 void IRAM_ATTR
 set_packet_to_queue(void)
 {
-	PROFILE_POINT(QUEUE_PACKET_SEND_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_QUEUE_PACKET_SEND_DBG_PROFILER, profile_point_start);
 
 	xQueueSend(xFramePacketQueueHandler, &ulFramePacketOffset, portMAX_DELAY);
 	ulFramePacketOffset = (ulFramePacketOffset + 1) & WIFI_TX_PACKETS_NUM_MASK;
 
-	PROFILE_POINT(QUEUE_PACKET_SEND_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_QUEUE_PACKET_SEND_DBG_PROFILER, profile_point_end);
 }
 
 
 void IRAM_ATTR
 vWirelessSendArray(wifi_packet_type_t xType, uint8_t* pucData, size_t ulDataSize, BaseType_t xUseEncryption)
 {
-	PROFILE_POINT(NEW_IMAGE_FRAME_TX_TIME_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_NEW_IMAGE_FRAME_TX_TIME_DBG_PROFILER, profile_point_start);
 
 	uint32_t ulTotalPackets = 0;
 
@@ -516,14 +518,14 @@ vWirelessSendArray(wifi_packet_type_t xType, uint8_t* pucData, size_t ulDataSize
 	set_packet_to_queue();
 	++ulTotalPackets;
 
-#if TOTAL_PACKETS_SEND_DBG_PRINTOUT
+#if (CONFIG_TOTAL_PACKETS_SEND_DBG_PRINTOUT == 1)
 	if(ulTotalPackets)
 	{
 		ASYNC_PRINTF(1, async_print_type_u32, "Total packets %u\n", ulTotalPackets);
 	}
-#endif
+#endif // CONFIG_TOTAL_PACKETS_SEND_DBG_PRINTOUT
 
-	PROFILE_POINT(NEW_IMAGE_FRAME_TX_TIME_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_NEW_IMAGE_FRAME_TX_TIME_DBG_PROFILER, profile_point_end);
 }
 
 
@@ -543,7 +545,7 @@ vDataTransmitterTask(void* pvArg)
 	// xSemaphoreGive(xDataTransmitterTxLockHandler);
 #endif
 
-	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_data_tx, 0);
+	ASYNC_PRINTF(CONFIG_ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_data_tx, 0);
 
 	for(;;)
 	{

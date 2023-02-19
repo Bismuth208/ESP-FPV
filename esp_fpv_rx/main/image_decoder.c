@@ -7,11 +7,12 @@
 #include "image_decoder.h"
 
 #include "data_common.h"
-#include "debug_tools_conf.h"
 #include "display_osd.h"
 #include "image_decoder.h"
 #include "memory_model/memory_model.h"
 #include "wireless/wireless_main.h"
+
+#include <debug_tools_esp.h>
 
 //
 #include <sdkconfig.h>
@@ -116,8 +117,8 @@ jd_input(JDEC* jdec, uint8_t* buf, uint32_t len)
 static uint32_t IRAM_ATTR
 jd_output(JDEC* jdec, void* bitmap, JRECT* jrect)
 {
-	PROFILE_POINT(JD_CHUNK_DECODE_TIME_DBG_PROFILER, profile_point_end);
-	PROFILE_POINT(JD_OUTPUT_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_JD_CHUNK_DECODE_TIME_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_JD_OUTPUT_DBG_PROFILER, profile_point_start);
 
 	JpgMagicChunk_t* pxJpgMagicChunk = NULL;
 
@@ -147,8 +148,8 @@ jd_output(JDEC* jdec, void* bitmap, JRECT* jrect)
 		}
 	}
 
-	PROFILE_POINT(JD_OUTPUT_DBG_PROFILER, profile_point_end);
-	PROFILE_POINT(JD_CHUNK_DECODE_TIME_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_JD_OUTPUT_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_JD_CHUNK_DECODE_TIME_DBG_PROFILER, profile_point_start);
 
 	return 1;
 }
@@ -162,7 +163,7 @@ process_received_image(void)
 
 	ulInputImageDataOffset = 0UL;
 
-	PROFILE_POINT(JD_DECODE_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_JD_DECODE_DBG_PROFILER, profile_point_start);
 
 	// Analyze input data
 	jresult = jd_prepare(&jdec, jd_input, &ucImageMemoryPool[0], IMAGE_MEMORY_UNPACK_POOL_SIZE, 0);
@@ -172,7 +173,7 @@ process_received_image(void)
 		jd_decomp(&jdec, jd_output);
 	}
 
-	PROFILE_POINT(JD_DECODE_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_JD_DECODE_DBG_PROFILER, profile_point_end);
 }
 
 
@@ -252,7 +253,8 @@ vImageProcessorTask(void* pvArg)
 
 	xTimerStart(xFrameCounterTimer, 0UL);
 
-	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_img_decoder, 0);
+	ASYNC_PRINTF(
+	    CONFIG_ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_img_decoder, 0);
 
 	for(;;)
 	{
@@ -272,7 +274,8 @@ vImageProcessorTask(void* pvArg)
 			++ulFramesCount;
 
 			// How much time did decoding take
-			ASYNC_PRINTF(IMAGE_DECODE_TIME_DBG_PRINTOUT, async_print_type_u32, "ulFrameTimeCount: %ums\n", ulFrameTimeCount);
+			ASYNC_PRINTF(
+			    CONFIG_IMAGE_DECODE_TIME_DBG_PRINTOUT, async_print_type_u32, "ulFrameTimeCount: %ums\n", ulFrameTimeCount);
 		}
 	}
 

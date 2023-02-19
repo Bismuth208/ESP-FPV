@@ -16,7 +16,7 @@ extern "C" {
 // ----------------------------------------------------------------------
 // Definitions, type & enum declaration
 
-#ifdef ENABLE_DEBUG_TOOLS
+#if (CONFIG_ENABLE_DEBUG_TOOLS == 1)
 #define ASYNC_PRINTF(name, item_type, new_msg, new_value)                      \
   if (name == 1) {                                                             \
     async_printf(item_type, new_msg, new_value);                               \
@@ -61,6 +61,11 @@ void async_printf(async_print_type_t item_type, const char *new_msg,
  * @attention to prevent high CPU loads, prints are as one at loop cycle
  */
 void async_printf_sync(void);
+
+// ----------------------------------------------------------------------
+// Core functions
+
+void init_async_printf(void);
 
 #ifdef __cplusplus
 }

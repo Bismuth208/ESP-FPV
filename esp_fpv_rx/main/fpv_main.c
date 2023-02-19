@@ -1,11 +1,12 @@
 #include "button_poller.h"
 #include "data_common.h"
-#include "debug_tools_conf.h"
 #include "display_osd.h"
 #include "image_decoder.h"
 #include "memory_model/memory_model.h"
 #include "pins_definitions.h"
 #include "wireless/wireless_main.h"
+
+#include <debug_tools_esp.h>
 
 //
 #include <sdkconfig.h>
@@ -90,6 +91,7 @@ task_sync_get_bits(uint32_t ulBits)
 void
 app_main(void)
 {
+	init_async_printf();
 	init_debug_assist();
 	init_memory_model();
 	init_button_poller();

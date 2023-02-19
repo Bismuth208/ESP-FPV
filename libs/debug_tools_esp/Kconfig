@@ -1,0 +1,85 @@
+menu "Debug tools config"
+
+  config ASYNC_PRINTF_MAX_ITEMS
+    int "Printf items"
+    default 512
+    help
+      Amount of items to be held/stored with buffer.
+      Note this value ALWAYS should be the power of 2 for correct work of circular buffer!
+
+  config ASYNC_PRINTF_MAX_OUTPUT_BUF_LEN
+    int "Text buffer size"
+    default 2048
+    help
+      Maximum amount of bytes in formatted string to output via UART
+  
+  config PROFILER_POINTS_MAX
+    int "Profile points"
+    default 32
+    help
+      Maximum amount of available independent points to use
+
+  config ASYNC_PRINTF_USE_RTOS
+    bool "Use dedicated task for async_printf"
+    default y
+    help
+      If disabled then async_printf_sync must be called within main loop
+
+  if ASYNC_PRINTF_USE_RTOS
+    menu "Config for async_printf task"
+      config ASSIGNED_TASK_PRINTF_NAME
+        string "Name for async_printf task"
+        default "task_printf"
+
+      config STACK_WORDS_SIZE_FOR_TASK_PRINTF
+        int "Stack size for async_printf task"
+        default 2048
+
+      config PRIORITY_LEVEL_FOR_TASK_PRINTF
+        int "Priority for async_printf task"
+        default 1
+
+      config SYNC_PERIOD_TASK_PRINTF
+        int "How often async_printf_sync is called (ms)"
+        range 1 1000
+        default 1
+
+      choice PINNED_CORE_FOR_TASK_PRINTF
+        bool "Core for async_printf task"
+        default ASYNC_PRINTF_CORE0
+    
+        config ASYNC_PRINTF_CORE0
+            bool "CORE0"
+        config ASYNC_PRINTF_CORE1
+            bool "CORE1"
+        config ASYNC_PRINTF_NO_AFFINITY
+            bool "NO_AFFINITY"
+      endchoice
+    endmenu
+  endif
+
+  menu "System stats print"
+    config SYS_STATS_DBG_PRINTOUT
+      bool "Print task and CPU usage"
+      default n
+      help
+        This parameter requirer to enable
+        at "Component config -> FreeRTOS -> Kernel ->":
+          - configUSE_TRACE_FACILITY
+          - Enable display of xCoreId in vTaskList
+          - configGENERATE_RUN_TIME_STATS
+
+    if SYS_STATS_DBG_PRINTOUT
+      config SYS_STATS_BUF_SIZE
+        int "Size of text buffer"
+        default 8192
+
+      config SYS_STATS_PLOT_TIMEOUT
+        int "Stasts print period (ms)"
+        default 1000
+        help
+          How ofted dedicated task will collect 
+          and print stats to UART
+    endif
+  endmenu
+endmenu

@@ -8,10 +8,6 @@ set(WIRELESS_MODULE_SRCS
     "wireless/wireless_main.c"
     )
 
-set(MISC_SRCS
-    "debug_assist.c"
-    )
-
 idf_component_register(SRCS
     ${FPV_SRCS}
     ${WIRELESS_MODULE_SRCS}

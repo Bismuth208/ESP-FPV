@@ -1,11 +1,12 @@
 #include "data_common.h"
-#include "debug_tools_conf.h"
 #include "pins_definitions.h"
 #include "wireless_conf.h"
 #include "wireless_main.h"
 
 //
 #include <sdkconfig.h>
+//
+#include <debug_tools_esp.h>
 //
 #include <driver/gpio.h>
 #include <driver/uart.h>
@@ -222,7 +223,7 @@ wifi_crypt_packet(const uint8_t* pucDataIn, uint8_t* pucDataOut, size_t xInputSi
 	// TODO: BD-0003 add lock for multithread access for wifi_crypt_packet
 	// TODO: BD-0004 add whole pucDataIn encryption for wifi_crypt_packet
 
-	PROFILE_POINT(AES_ENCRYPTION_TIME_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_AES_ENCRYPTION_TIME_DBG_PROFILER, profile_point_start);
 
 	if(ucCryptLastMode != ucMode)
 	{
@@ -247,7 +248,7 @@ wifi_crypt_packet(const uint8_t* pucDataIn, uint8_t* pucDataOut, size_t xInputSi
 		wifi_aes_crypt_ll((uint32_t*)&pucDataOut[AES_ENCRYPTION_MAX_BYTES], (uint32_t*)&pucDataOut[0]);
 	}
 
-	PROFILE_POINT(AES_ENCRYPTION_TIME_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_AES_ENCRYPTION_TIME_DBG_PROFILER, profile_point_end);
 }
 
 
