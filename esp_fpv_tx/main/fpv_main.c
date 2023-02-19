@@ -1,10 +1,11 @@
 #include "camera.h"
 #include "data_common.h"
-#include "debug_tools_conf.h"
 #include "wireless/wireless_main.h"
 
 //
 #include <sdkconfig.h>
+//
+#include <debug_tools_esp.h>
 //
 #include <freertos/FreeRTOS.h>
 #include <freertos/FreeRTOSConfig.h>

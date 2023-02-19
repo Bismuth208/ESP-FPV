@@ -1,0 +1,140 @@
+menu "Debug project configuration"
+  config ENABLE_DEBUG_TOOLS
+    bool "Debug Support"
+    default n
+    help
+      Enable/disable whole debug output
+
+  # if ENABLE_DEBUG_TOOLS
+    menu "Debug Items"
+      config ENABLE_TASK_START_EVENT_DBG_PRINTOUT
+        int "Print what TaskName is started"
+        range 0 1
+        default 0
+
+      config IMAGE_DECODE_TIME_DBG_PRINTOUT
+        int "Print amount of time used by image docoder"
+        range 0 1
+        default 0
+
+      config OSD_UPDATE_TIME_DBG_PRINTOUT
+        int "Tell when OSD being updated"
+        range 0 1
+        default 0
+
+      config WIFI_RX_PACKET_CB_DBG_PRINTOUT
+        int "Tell when wifi_packet_rx_cb is called"
+        range 0 1
+        default 0
+        
+      config WIFI_RX_DATA_CB_DBG_PRINTOUT
+        int "Dump data wifi_packet_rx_cb is called"
+        range 0 1
+        default 0
+
+      config ESP_NOW_SEND_PACKET_FAIL_DBG_PRINTOUT
+        int "Tell when esp_now_send failed and why"
+        range 0 1
+        default 0
+
+      config WIRELESS_TELL_SCAN_PROGRESS
+        int "Tell collected stats from wireless_scanner"
+        range 0 1
+        default 0
+    endmenu
+
+    # Naming rule:
+    #  YOUR_NAME##_DBG_PROFILER
+    #  YOUR_NAME##_DBG_PROFILER_POINT_ID
+    # NOTE: Point Id Should not be higher than @ref PROFILER_POINTS_MAX
+    menu "Profile Items"
+      menu "JD_CHUNK_DECODE_TIME_DBG_PROFILER"
+        config JD_CHUNK_DECODE_TIME_DBG_PROFILER
+          int "Trace time used to decode jpg tile"
+          range 0 1
+          default 0
+        config JD_CHUNK_DECODE_TIME_DBG_PROFILER_POINT_ID
+          int "Profile ID"
+          range 0 PROFILER_POINTS_MAX
+          default 2
+      endmenu
+
+      menu "JD_OUTPUT_DBG_PROFILER"
+        config JD_OUTPUT_DBG_PROFILER
+          int "Trace time used to copy decoded jpg tile"
+          range 0 1
+          default 0
+        config JD_OUTPUT_DBG_PROFILER_POINT_ID
+          int "Profile ID"
+          range 0 PROFILER_POINTS_MAX
+          default 3
+      endmenu
+
+      menu "JD_DECODE_DBG_PROFILER"
+        config JD_DECODE_DBG_PROFILER
+          int "Trace time used to decode jpg image"
+          range 0 1
+          default 0
+        config JD_DECODE_DBG_PROFILER_POINT_ID
+          int "Profile ID"
+          range 0 PROFILER_POINTS_MAX
+          default 4
+      endmenu
+      
+      menu "ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER"
+        config ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER
+          int "Trace time used by send_new_packet"
+          range 0 1
+          default 0
+        config ESP_NOW_TASK_PACKET_SEND_DBG_PROFILER_POINT_ID
+          int "Profile ID"
+          range 0 PROFILER_POINTS_MAX
+          default 5
+      endmenu
+
+      menu "ESP_NOW_RX_DATA_DBG_PROFILER"
+        config ESP_NOW_RX_DATA_DBG_PROFILER
+          int "Trace time used by wifi_espnow_parse_new_data"
+          range 0 1
+          default 0
+        config ESP_NOW_RX_DATA_DBG_PROFILER_POINT_ID
+          int "Profile ID"
+          range 0 PROFILER_POINTS_MAX
+          default 6
+      endmenu
+      
+      menu "IMG_CHUNK_DRAW_DBG_PROFILER"
+        config IMG_CHUNK_DRAW_DBG_PROFILER
+          int "Trace time used by draw_img_chunk"
+          range 0 1
+          default 0
+        config IMG_CHUNK_DRAW_DBG_PROFILER_POINT_ID
+          int "Profile ID"
+          range 0 PROFILER_POINTS_MAX
+          default 7
+      endmenu
+      
+      menu "OSD_DRAW_TIME_DBG_PROFILER"
+        config OSD_DRAW_TIME_DBG_PROFILER
+          int "Trace time used by draw_osd_screen"
+          range 0 1
+          default 0
+        config OSD_DRAW_TIME_DBG_PROFILER_POINT_ID
+          int "Profile ID"
+          range 0 PROFILER_POINTS_MAX
+          default 8
+      endmenu
+
+      menu "AES_ENCRYPTION_TIME_DBG_PROFILER"
+        config AES_ENCRYPTION_TIME_DBG_PROFILER
+          int "Trace time used by Encrypt/Decrypt data"
+          range 0 1
+          default 0
+        config AES_ENCRYPTION_TIME_DBG_PROFILER_POINT_ID
+          int "Profile ID"
+          range 0 PROFILER_POINTS_MAX
+          default 9
+      endmenu
+    endmenu
+  # endif
+endmenu

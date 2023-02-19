@@ -1,9 +1,10 @@
 #include "button_poller.h"
 
 #include "data_common.h"
-#include "debug_tools_conf.h"
 #include "memory_model/memory_model.h"
 #include "pins_definitions.h"
+
+#include <debug_tools_esp.h>
 
 //
 #include <sdkconfig.h>
@@ -97,7 +98,8 @@ init_gpio(void)
 }
 
 
-void init_button_poller(void)
+void
+init_button_poller(void)
 {
-  init_gpio();
+	init_gpio();
 }

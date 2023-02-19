@@ -2,11 +2,12 @@
 
 #include "camera_pins.h"
 #include "data_common.h"
-#include "debug_tools_conf.h"
 #include "wireless/wireless_main.h"
 
 //
 #include <sdkconfig.h>
+//
+#include <debug_tools_esp.h>
 //
 #include <freertos/FreeRTOS.h>
 #include <freertos/FreeRTOSConfig.h>
@@ -206,7 +207,7 @@ send_jpg_header(uint8_t* pucImageData)
 static void IRAM_ATTR
 camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 {
-	PROFILE_POINT(JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_start);
+	PROFILE_POINT(CONFIG_JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_start);
 
 	if(data != NULL)
 	{
@@ -253,7 +254,7 @@ camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 
 				usImageDataSize -= (usDataOffsetExtra);
 
-				PROFILE_POINT(JPG_EOI_SEARCH_TIME_DBG_PROFILER, profile_point_start);
+				PROFILE_POINT(CONFIG_JPG_EOI_SEARCH_TIME_DBG_PROFILER, profile_point_start);
 
 				// Start from the second half of the image what potentially contain garbage
 				uint8_t* pucGarbage = (uint8_t*)&ucImageData[usDataOffsetExtra + (usImageDataSize / 2)];
@@ -264,7 +265,7 @@ camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 					;
 				usImageDataSize = pucGarbage - (uint8_t*)&ucImageData[usDataOffsetExtra];
 
-				PROFILE_POINT(JPG_EOI_SEARCH_TIME_DBG_PROFILER, profile_point_end);
+				PROFILE_POINT(CONFIG_JPG_EOI_SEARCH_TIME_DBG_PROFILER, profile_point_end);
 
 				// Copy data to Tx queue
 				vWirelessSendArray(PACKET_TYPE_FRAME_DATA, &ucImageData[usDataOffsetExtra], usImageDataSize, pdTRUE);
@@ -274,7 +275,7 @@ camera_data_available(const void* data, size_t count, bool last_dma_transfer)
 		}
 	}
 
-	PROFILE_POINT(JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_end);
+	PROFILE_POINT(CONFIG_JPG_DMA_COPY_TIME_DBG_PROFILER, profile_point_end);
 }
 
 static uint32_t
@@ -364,7 +365,7 @@ vForceFrameUpdateTimer(TimerHandle_t xTimer)
 	(void)xTimer;
 	vStartNewFrame();
 
-	ASYNC_PRINTF(TIMER_FRAME_UPDATE_DBG_PRINTOUT, async_print_type_str, "vForceFrameUpdateTimer\n", 0);
+	ASYNC_PRINTF(CONFIG_TIMER_FRAME_UPDATE_DBG_PRINTOUT, async_print_type_str, "vForceFrameUpdateTimer\n", 0);
 }
 
 
@@ -375,7 +376,7 @@ vCameraTask(void* pvArg)
 	// No further execution until full initialization
 	task_sync_get_bits(TASK_SYNC_EVENT_BIT_CAMERA);
 
-	ASYNC_PRINTF(ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_camera, 0);
+	ASYNC_PRINTF(CONFIG_ENABLE_TASK_START_EVENT_DBG_PRINTOUT, async_print_type_str, assigned_name_for_task_camera, 0);
 
 	if(ulWaitNewFrameAck(portMAX_DELAY))
 	{
@@ -385,7 +386,7 @@ vCameraTask(void* pvArg)
 
 	xTimerStart(xForceFrameUpdateTimer, 0UL);
 
-#if IMAGE_TX_TIME_DBG_PRINTOUT
+#if (CONFIG_IMAGE_TX_TIME_DBG_PRINTOUT == 1)
 	int64_t fr_start = 0;
 	int64_t fr_end = 0;
 #endif
@@ -403,7 +404,7 @@ vCameraTask(void* pvArg)
 		if(ulWaitNewFrameAck(portMAX_DELAY))
 #endif
 		{
-#if IMAGE_TX_TIME_DBG_PRINTOUT
+#if (CONFIG_IMAGE_TX_TIME_DBG_PRINTOUT == 1)
 			fr_start = esp_timer_get_time();
 			take_new_image_frame();
 			fr_end = esp_timer_get_time();
@@ -460,10 +461,10 @@ init_camera(void)
 
 	if(err != ESP_OK)
 	{
-#if CAMERA_INIT_FAIL_DBG_PRINTOUT
+#if (CONFIG_CAMERA_INIT_FAIL_DBG_PRINTOUT == 1)
 		ASYNC_PRINTF(1, async_print_type_u32, "Camera init failed with error 0x%x\n", err);
 		vTaskDelay(pdMS_TO_TICKS(500));
-#endif
+#endif // CONFIG_CAMERA_INIT_FAIL_DBG_PRINTOUT
 		assert(pdFALSE);
 		return;
 	}

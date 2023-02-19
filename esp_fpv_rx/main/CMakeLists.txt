@@ -12,7 +12,6 @@ set(WIRELESS_MODULE_SRCS
     )
 
 set(MISC_SRCS
-    "debug_assist.c"
     "memory_model/memory_model.c"
     "tjpg_decoder/tjpgd.c"
     )

@@ -41,17 +41,6 @@ void task_sync_set_bits(uint32_t ulBits);
 void task_sync_get_bits(uint32_t ulBits);
 
 
-/**
- * @brief 
- */
-void init_debug_assist(void);
-
-/**
- * @brief 
- */
-void debug_assist_start(void);
-
-
 #ifdef __cplusplus
 }
 #endif
